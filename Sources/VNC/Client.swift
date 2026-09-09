@@ -18,11 +18,7 @@ final class VNCAuthInfo {
 
 public extension VNC {
     func handshake() async -> Bool {
-        mutex.lock()
-        defer {
-            mutex.unlock()
-        }
-        return await io.call { [self] in
+        await io.call { [self] in
             guard let client = rfbGetClient(8, 3, 4) else {
                 return false
             }
@@ -36,9 +32,10 @@ public extension VNC {
 
             client.pointee.sock = fd
 
+            client.pointee.connectTimeout = timeout.uint32
+
             setupPreferredPixelFormat(client: client)
             setupCallbacks(client: client)
-
             guard InitialiseRFBConnection(client) != 0 else {
                 rfbClientCleanup(client)
                 return false
@@ -145,12 +142,20 @@ public extension VNC {
     }
 
     func disconnect() {
-        etos_socket_shutdown(fd, SHUT_RD)
+        etos_socket_shutdown(fd, SHUT_RDWR)
+
         socketShell?.cancel()
+
         mutex.withLock {
             socketShell = nil
             vncDelegate = nil
+            if let rawClient {
+                rawClient.pointee.sock = -1
+                rfbClientCleanup(rawClient)
+            }
+            rawClient = nil
         }
+
         freeSocket()
     }
 }

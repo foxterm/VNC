@@ -17,7 +17,13 @@ extension VNC {
     func setupCallbacks(client: UnsafeMutablePointer<rfbClient>) {
         // 绑定 self 到 clientData
         // 赋值
-        client.pointee.clientData = Unmanaged.passUnretained(self).toOpaque().assumingMemoryBound(to: rfbClientData.self)
+
+        let node = UnsafeMutablePointer<rfbClientData>.allocate(capacity: 1)
+        node.pointee.tag = nil
+        node.pointee.data = Unmanaged.passUnretained(self).toOpaque() // self 存在 data 里
+        node.pointee.next = nil
+        client.pointee.clientData = node
+        //  client.pointee.clientData = Unmanaged.passUnretained(self).toOpaque().assumingMemoryBound(to: rfbClientData.self)
 
 //        client.pointee.MallocFrameBuffer = { client in
 //            print("😯😯😯😯😯😯😯😯")
@@ -55,58 +61,60 @@ extension VNC {
 
         // 1. 纯密码认证回调
         client.pointee.GetPassword = { client in
-            guard let client, let dataPtr = client.pointee.clientData else { return nil }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return nil }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+
             return vnc.providePassword()
         }
 
         // 2. 账号+密码认证回调
         client.pointee.GetCredential = { client, credType in
-            guard let client, let dataPtr = client.pointee.clientData else { return nil }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return nil }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+
             return vnc.provideCredential(type: credType)
         }
 
         // 3. 图像帧更新回调
         client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
-            guard let client, let dataPtr = client.pointee.clientData else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
         }
 
         // 4. 剪贴板文本回调 (ISO-Latin1)
         client.pointee.GotXCutText = { client, text, textlen in
-            guard let client, let dataPtr = client.pointee.clientData, let text else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             let str = String(bytes: UnsafeBufferPointer(start: UnsafePointer<UInt8>(OpaquePointer(text)), count: Int(textlen)), encoding: .isoLatin1) ?? ""
             vnc.handleXCutText(str)
         }
 
         // 5. 剪贴板文本回调 (UTF-8)
         client.pointee.GotXCutTextUTF8 = { client, text, textlen in
-            guard let client, let dataPtr = client.pointee.clientData, let text else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             let str = String(bytes: UnsafeBufferPointer(start: UnsafePointer<UInt8>(OpaquePointer(text)), count: Int(textlen)), encoding: .utf8) ?? ""
             vnc.handleXCutText(str)
         }
 
         // 6. 聊天文本回调
         client.pointee.HandleTextChat = { client, value, text in
-            guard let client, let dataPtr = client.pointee.clientData else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             let message = text.map { String(cString: $0) } ?? ""
             vnc.handleTextChat(code: Int(value), message: message)
         }
 
         // 7. 响铃提示回调
         client.pointee.Bell = { client in
-            guard let client, let dataPtr = client.pointee.clientData else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleBell()
         }
         client.pointee.FinishedFrameBufferUpdate = { client in
-            guard let client, let dataPtr = client.pointee.clientData else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleFinishedFrameBufferUpdate()
         }
     }

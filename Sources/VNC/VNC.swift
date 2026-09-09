@@ -47,7 +47,7 @@ public class VNC {
     }
 
     deinit {
-        rawClient = nil
+        disconnect()
         #if DEBUG
             print("♻️♻️♻️♻️", "VNC")
         #endif
