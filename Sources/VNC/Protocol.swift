@@ -5,7 +5,7 @@
 import Foundation
 import SwiftUI
 
-public protocol VNCDelegate: AnyObject {
+public protocol VNCDelegate {
     func disconnect()
     func buffer(vnc: VNC, image: CGImage?)
     func handleDesktopSizeChange(width: Int, height: Int)

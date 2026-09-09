@@ -67,3 +67,4 @@ xcframework_build/
 output/
 
 .DS_Store
+Package.resolved

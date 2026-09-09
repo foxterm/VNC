@@ -53,14 +53,12 @@ public extension VNC {
 
     func pollShell() {
         SetNonBlocking(fd)
+        etos_socket_set_blocking(fd, false)
         socketShell?.cancel()
         socketShell = nil
         socketShell = DispatchSource.makeReadSource(fileDescriptor: fd, queue: queueSocket)
         socketShell?.setEventHandler { [self] in
-            guard processEvents() else {
-                vncDelegate?.disconnect()
-                return
-            }
+            processEvents()
         }
         socketShell?.setCancelHandler {
             self.socketShell = nil

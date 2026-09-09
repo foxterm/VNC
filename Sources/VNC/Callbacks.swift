@@ -16,19 +16,43 @@ import libvncclient
 extension VNC {
     func setupCallbacks(client: UnsafeMutablePointer<rfbClient>) {
         // 绑定 self 到 clientData
+        // 赋值
         client.pointee.clientData = Unmanaged.passUnretained(self).toOpaque().assumingMemoryBound(to: rfbClientData.self)
-        client.pointee.MallocFrameBuffer = { client in
-            guard let client, let dataPtr = client.pointee.clientData else { return 1 }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
 
-            // 重新分配 FrameBuffer 说明分辨率或者格式发生了改变，触发事件
-            vnc.handleDesktopSizeChange(
-                width: Int(client.pointee.width),
-                height: Int(client.pointee.height)
-            )
+//        client.pointee.MallocFrameBuffer = { client in
+//            print("😯😯😯😯😯😯😯😯")
+//            guard let client, let dataPtr = client.pointee.clientData else { return 0 }
+//            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+//
+//            let width = Int(client.pointee.width)
+//            let height = Int(client.pointee.height)
+//            let bitsPerPixel = Int(client.pointee.format.bitsPerPixel)
+//            let bytesPerPixel = bitsPerPixel / 8
+//            let bufferSize = width * height * bytesPerPixel
+//
+//            // 1. Free existing buffer if resizing
+//            if client.pointee.frameBuffer != nil {
+//                free(client.pointee.frameBuffer)
+//            }
+//
+//            // 2. Allocate memory using standard C malloc
+//            guard let newBuffer = malloc(bufferSize) else {
+//                return 0 // Allocation failed
+//            }
+//            client.pointee.frameBuffer = UnsafeMutablePointer<UInt8>(OpaquePointer(newBuffer))
+//
+//            // 3. Sync pixel format and encodings with the server
+//            SetFormatAndEncodings(client)
+//
+//            // 4. Notify delegate of desktop size
+//            vnc.handleDesktopSizeChange(width: width, height: height)
+//
+//            // 5. Request the initial full-screen update
+//            SendFramebufferUpdateRequest(client, 0, 0, width.int32, height.int32, 0)
+//
+//            return 1 // Return 1 for success
+//        }
 
-            return 1 // 返回 1 使用默认的内存分配策略
-        }
         // 1. 纯密码认证回调
         client.pointee.GetPassword = { client in
             guard let client, let dataPtr = client.pointee.clientData else { return nil }
@@ -80,30 +104,24 @@ extension VNC {
             let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
             vnc.handleBell()
         }
-        client.pointee.FinishedFrameBufferUpdate = { client in
-            guard let client, let dataPtr = client.pointee.clientData else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
-            vnc.handleFinishedFrameBufferUpdate()
-        }
+//        client.pointee.FinishedFrameBufferUpdate = { client in
+//            guard let client, let dataPtr = client.pointee.clientData else { return }
+//            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+//            vnc.handleFinishedFrameBufferUpdate()
+//        }
     }
 
-    func gotFrameBufferUpdate(
-        x _: Int,
-        y _: Int,
-        w _: Int,
-        h _: Int
-    ) {
-        guard let client = rawClient, let frameBuffer = client.pointee.frameBuffer else {
-            return
-        }
+    func gotFrameBufferUpdate() {
+        guard let client = rawClient else { return }
+        guard let frameBuffer = client.pointee.frameBuffer else { return }
 
-        let width = client.pointee.width
-        let height = client.pointee.height
+        let width = client.pointee.width.int
+        let height = client.pointee.height.int
         let pixelFormat = client.pointee.format
-        let bitsPerPixel = pixelFormat.bitsPerPixel
-        let bytesPerPixel = Int32(bitsPerPixel / 8)
+        let bitsPerPixel = pixelFormat.bitsPerPixel.int
+        let bytesPerPixel = bitsPerPixel / 8
         let stride = width * bytesPerPixel
-        let bufferSize = Int(width * height * bytesPerPixel)
+        let bufferSize = width * height * bytesPerPixel
         // 创建颜色空间和位图信息
         let colorSpace: CGColorSpace
         let bitmapInfo: CGBitmapInfo
@@ -192,7 +210,10 @@ public extension VNC {
     // MARK: - 事件与数据更新回调响应
 
     /// 画面帧更新响应
-    func handleFrameBufferUpdate(x: Int, y: Int, width: Int, height: Int) {
+    func handleFrameBufferUpdate(x _: Int, y _: Int, width _: Int, height _: Int) {
+        #if DEBUG
+            print("画面帧更新响应")
+        #endif
         if let client = rawClient {
             let currentWidth = Int(client.pointee.width)
             let currentHeight = Int(client.pointee.height)
@@ -204,7 +225,7 @@ public extension VNC {
 
                 handleDesktopSizeChange(width: currentWidth, height: currentHeight)
             }
-            gotFrameBufferUpdate(x: x, y: y, w: width, h: height)
+            gotFrameBufferUpdate()
         }
     }
 
@@ -240,7 +261,13 @@ public extension VNC {
 
     /// 每次帧缓冲区更新完成时触发（可用于计算 FPS 或性能指标）
     func handleFinishedFrameBufferUpdate() {
-        // 统计帧率 (FPS) 或触发屏幕刷新重绘操作
+        #if DEBUG
+            print("统计帧率 (FPS) 或触发屏幕刷新重绘操作")
+        #endif
+//        guard let rawClient else{
+//            return
+//        }
+        // SendFramebufferUpdateRequest(rawClient, 0, 0, rawClient.pointee.width, rawClient.pointee.height, 0)
     }
 
     /// 剪贴板文本响应 (远端同步到本地)

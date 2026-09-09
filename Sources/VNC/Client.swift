@@ -25,9 +25,12 @@ public extension VNC {
             client.pointee.appData.qualityLevel = qualityLevel
             client.pointee.appData.enableJPEG = enableJPEG ? 1 : 0
             client.pointee.sock = fd
+//            client.pointee.canHandleNewFBSize = 1
+//            client.pointee.listenSpecified = 1
 
             setupPreferredPixelFormat(client: client)
             setupCallbacks(client: client)
+
             guard InitialiseRFBConnection(client) != 0 else {
                 rfbClientCleanup(client)
                 return false
@@ -37,16 +40,9 @@ public extension VNC {
                 return false
             }
 
-            guard SendFramebufferUpdateRequest(
-                client,
-                0, 0,
-                client.pointee.width,
-                client.pointee.height,
-                0
-            ) != 0 else {
-                rfbClientCleanup(client)
-                return false
-            }
+            SendFramebufferUpdateRequest(client, 0, 0, client.pointee.width, client.pointee.height, 0)
+
+            rawClient = client
             pollShell()
             return isConnected
         }
@@ -125,16 +121,18 @@ public extension VNC {
     }
 
     /// 处理事件循环
-    internal func processEvents(_ timeout: UInt32 = 50) -> Bool {
+    internal func processEvents() -> Bool {
         guard let rawClient else { return false }
-        let rc = WaitForMessage(rawClient, timeout)
-        guard rc > 0 else {
-            return false
-        }
-        guard HandleRFBServerMessage(rawClient) != 0 else {
-            return false
-        }
 
+        let rc = WaitForMessage(rawClient, 50)
+        if rc < 0 {
+            return false // 连接错误断开
+        }
+        if rc > 0 {
+            guard HandleRFBServerMessage(rawClient) != 0 else {
+                return false
+            }
+        }
         return true
     }
 

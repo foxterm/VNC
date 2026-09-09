@@ -18,13 +18,13 @@ public class VNC {
     public internal(set) var lastWidth: Int = 0
     public internal(set) var lastHeight: Int = 0
 
-    public var preferredColorDepth: ColorDepth = .bit16
+    public var preferredColorDepth: ColorDepth = .bit32
     public var enableJPEG = true
     public var qualityLevel: Int32 = 9
     public var compressLevel: Int32 = 6
     public var isCursor = true
 
-    public weak var vncDelegate: VNCDelegate?
+    public var vncDelegate: VNCDelegate?
 
     public let host: String
     public let port: Int

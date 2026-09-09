@@ -34,8 +34,11 @@ done
 # ================= 1. 源码下载 =================
 echo "==> [1/4] 下载官方源码..."
 
+# if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
+#     git -c advice.detachedHead=false clone --branch ${LIBVNC_TAG} --depth 1 https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
+# fi
 if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
-    git -c advice.detachedHead=false clone --branch ${LIBVNC_TAG} --depth 1 https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
+    git clone https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
 fi
 
 if [ ! -d "${SOURCE_DIR}/zlib" ]; then
