@@ -256,13 +256,4 @@ public extension VNC {
             return 0x0100_0000 | UInt32(value)
         }
     }
-
-    /// 发送内容到远程剪贴板
-    func sendToRemoteClipboard(_ text: String) {
-        guard let rawClient else { return }
-        guard SendClientCutTextUTF8(rawClient, text.bytes, text.count.int32) != 0 else {
-            SendClientCutText(rawClient, text.bytes, text.count.int32)
-            return
-        }
-    }
 }
