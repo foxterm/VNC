@@ -4,6 +4,7 @@
 
 import Foundation
 import libvncclient
+import Sync
 
 public class VNC {
     public internal(set) var rawClient: UnsafeMutablePointer<rfbClient>?
@@ -17,12 +18,13 @@ public class VNC {
     // 缓存桌面上一次的宽高，用于判定分辨率变化
     public internal(set) var lastWidth: Int = 0
     public internal(set) var lastHeight: Int = 0
-
+    let mutex: Mutex = .init()
     public var preferredColorDepth: ColorDepth = .bit32
     public var enableJPEG = true
     public var qualityLevel: Int32 = 9
     public var compressLevel: Int32 = 6
     public var isCursor = true
+    // public var viewOnly = false
 
     public var vncDelegate: VNCDelegate?
 
@@ -41,9 +43,9 @@ public class VNC {
     }
 
     deinit {
-        disconnect()
+        rawClient = nil
         #if DEBUG
-            print("♻️", "VNC")
+            print("♻️♻️♻️♻️", "VNC")
         #endif
     }
 }

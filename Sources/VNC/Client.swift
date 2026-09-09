@@ -18,16 +18,23 @@ final class VNCAuthInfo {
 
 public extension VNC {
     func handshake() async -> Bool {
-        await io.call { [self] in
+        mutex.lock()
+        defer {
+            mutex.unlock()
+        }
+        return await io.call { [self] in
             guard let client = rfbGetClient(8, 3, 4) else {
                 return false
             }
             client.pointee.appData.compressLevel = compressLevel
             client.pointee.appData.qualityLevel = qualityLevel
             client.pointee.appData.enableJPEG = enableJPEG ? 1 : 0
+//            client.pointee.appData.useRemoteCursor = 1 //远程光标渲染
+            client.pointee.appData.shareDesktop = 1 // 多端共享桌面
+            client.pointee.appData.palmVNC = 1 // PalmVNC 协议兼容
+//            client.pointee.appData.scaleSetting = 0 //画面缩放比例
+
             client.pointee.sock = fd
-//            client.pointee.canHandleNewFBSize = 1
-//            client.pointee.listenSpecified = 1
 
             setupPreferredPixelFormat(client: client)
             setupCallbacks(client: client)
@@ -140,12 +147,10 @@ public extension VNC {
     func disconnect() {
         etos_socket_shutdown(fd, SHUT_RD)
         socketShell?.cancel()
-        socketShell = nil
-        if rawClient != nil {
-            rfbClientCleanup(rawClient)
+        mutex.withLock {
+            socketShell = nil
+            vncDelegate = nil
         }
-        vncDelegate = nil
-        rawClient = nil
         freeSocket()
     }
 }

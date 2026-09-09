@@ -111,7 +111,14 @@ extension VNC {
 //        }
     }
 
+    private static let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
+    private static let grayColorSpace = CGColorSpaceCreateDeviceGray()
+
     func gotFrameBufferUpdate() {
+        mutex.lock()
+        defer {
+            mutex.unlock()
+        }
         guard let client = rawClient else { return }
         guard let frameBuffer = client.pointee.frameBuffer else { return }
 
@@ -122,60 +129,49 @@ extension VNC {
         let bytesPerPixel = bitsPerPixel / 8
         let stride = width * bytesPerPixel
         let bufferSize = width * height * bytesPerPixel
-        // 创建颜色空间和位图信息
+
         let colorSpace: CGColorSpace
         let bitmapInfo: CGBitmapInfo
         let bitsPerComponent: Int
-        let actualBitsPerPixel: Int
 
         switch bitsPerPixel {
         case 32:
-            #if os(iOS)
-                colorSpace = CGColorSpaceCreateDeviceRGB()
-            #else
-                colorSpace = CGColorSpaceCreateDeviceRGB()
-            #endif
-            bitmapInfo = CGBitmapInfo(
-                rawValue: CGBitmapInfo.byteOrder32Little.rawValue |
-                    CGImageAlphaInfo.noneSkipFirst.rawValue
-            )
+            colorSpace = Self.rgbColorSpace
+            bitmapInfo = CGBitmapInfo(rawValue: CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.noneSkipFirst.rawValue)
             bitsPerComponent = 8
-            actualBitsPerPixel = 32
         case 16:
-            colorSpace = CGColorSpaceCreateDeviceRGB()
-            bitmapInfo = CGBitmapInfo(
-                rawValue: CGBitmapInfo.byteOrder16Little.rawValue |
-                    CGImageAlphaInfo.noneSkipFirst.rawValue
-            )
+            colorSpace = Self.rgbColorSpace
+            bitmapInfo = CGBitmapInfo(rawValue: CGBitmapInfo.byteOrder16Little.rawValue | CGImageAlphaInfo.noneSkipFirst.rawValue)
             bitsPerComponent = 5
-            actualBitsPerPixel = 16
         case 8:
-            colorSpace = CGColorSpaceCreateDeviceGray()
+            colorSpace = Self.grayColorSpace
             bitmapInfo = []
             bitsPerComponent = 8
-            actualBitsPerPixel = 8
         default:
             return
         }
 
-        // 创建数据提供者
-        let data = Data(bytes: frameBuffer, count: bufferSize)
-        guard let provider = CGDataProvider(data: data as CFData) else { return }
+        guard let provider = CGDataProvider(
+            dataInfo: nil,
+            data: frameBuffer,
+            size: bufferSize,
+            releaseData: { _, _, _ in }
+        ) else { return }
 
-        // 创建CGImage
-        let cgImage = CGImage(
-            width: Int(width),
-            height: Int(height),
+        guard let cgImage = CGImage(
+            width: width,
+            height: height,
             bitsPerComponent: bitsPerComponent,
-            bitsPerPixel: actualBitsPerPixel,
-            bytesPerRow: Int(stride),
+            bitsPerPixel: bitsPerPixel,
+            bytesPerRow: stride,
             space: colorSpace,
             bitmapInfo: bitmapInfo,
             provider: provider,
             decode: nil,
-            shouldInterpolate: true,
+            shouldInterpolate: false,
             intent: .defaultIntent
-        )
+        ) else { return }
+
         vncDelegate?.buffer(vnc: self, image: cgImage)
     }
 }
