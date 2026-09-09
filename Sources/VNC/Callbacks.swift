@@ -23,42 +23,6 @@ extension VNC {
         node.pointee.data = Unmanaged.passUnretained(self).toOpaque() // self 存在 data 里
         node.pointee.next = nil
         client.pointee.clientData = node
-        //  client.pointee.clientData = Unmanaged.passUnretained(self).toOpaque().assumingMemoryBound(to: rfbClientData.self)
-
-//        client.pointee.MallocFrameBuffer = { client in
-//            print("😯😯😯😯😯😯😯😯")
-//            guard let client, let dataPtr = client.pointee.clientData else { return 0 }
-//            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
-//
-//            let width = Int(client.pointee.width)
-//            let height = Int(client.pointee.height)
-//            let bitsPerPixel = Int(client.pointee.format.bitsPerPixel)
-//            let bytesPerPixel = bitsPerPixel / 8
-//            let bufferSize = width * height * bytesPerPixel
-//
-//            // 1. Free existing buffer if resizing
-//            if client.pointee.frameBuffer != nil {
-//                free(client.pointee.frameBuffer)
-//            }
-//
-//            // 2. Allocate memory using standard C malloc
-//            guard let newBuffer = malloc(bufferSize) else {
-//                return 0 // Allocation failed
-//            }
-//            client.pointee.frameBuffer = UnsafeMutablePointer<UInt8>(OpaquePointer(newBuffer))
-//
-//            // 3. Sync pixel format and encodings with the server
-//            SetFormatAndEncodings(client)
-//
-//            // 4. Notify delegate of desktop size
-//            vnc.handleDesktopSizeChange(width: width, height: height)
-//
-//            // 5. Request the initial full-screen update
-//            SendFramebufferUpdateRequest(client, 0, 0, width.int32, height.int32, 0)
-//
-//            return 1 // Return 1 for success
-//        }
-
         // 1. 纯密码认证回调
         client.pointee.GetPassword = { client in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return nil }
