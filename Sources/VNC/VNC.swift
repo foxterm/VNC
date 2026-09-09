@@ -28,6 +28,10 @@ public class VNC {
 
     public var vncDelegate: VNCDelegate?
 
+    internal(set) var frameCount: Int = 0
+    internal(set) var lastFPSUpdateTime: TimeInterval = CFAbsoluteTimeGetCurrent()
+    internal(set) var currentFPS: Double = 0.0
+
     public let host: String
     public let port: Int
     public let username: String

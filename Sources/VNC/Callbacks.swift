@@ -104,11 +104,11 @@ extension VNC {
             let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
             vnc.handleBell()
         }
-//        client.pointee.FinishedFrameBufferUpdate = { client in
-//            guard let client, let dataPtr = client.pointee.clientData else { return }
-//            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
-//            vnc.handleFinishedFrameBufferUpdate()
-//        }
+        client.pointee.FinishedFrameBufferUpdate = { client in
+            guard let client, let dataPtr = client.pointee.clientData else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
+            vnc.handleFinishedFrameBufferUpdate()
+        }
     }
 
     private static let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
@@ -242,13 +242,24 @@ public extension VNC {
 
     /// 每次帧缓冲区更新完成时触发（可用于计算 FPS 或性能指标）
     func handleFinishedFrameBufferUpdate() {
-        #if DEBUG
-            print("统计帧率 (FPS) 或触发屏幕刷新重绘操作")
-        #endif
-//        guard let rawClient else{
-//            return
-//        }
-        // SendFramebufferUpdateRequest(rawClient, 0, 0, rawClient.pointee.width, rawClient.pointee.height, 0)
+        frameCount += 1
+
+        let now = CFAbsoluteTimeGetCurrent()
+        let elapsedTime = now - lastFPSUpdateTime
+
+        if elapsedTime >= 1.0 {
+            currentFPS = Double(frameCount) / elapsedTime
+
+            #if DEBUG
+                print(String(format: "当前 VNC 实时帧率 FPS: %.1f", currentFPS))
+            #endif
+
+            // 重置计数器与时间戳
+            frameCount = 0
+            lastFPSUpdateTime = now
+
+            vncDelegate?.handleFPSChange(eps: currentFPS)
+        }
     }
 
     /// 剪贴板文本响应 (远端同步到本地)

@@ -9,4 +9,5 @@ public protocol VNCDelegate {
     func disconnect()
     func buffer(vnc: VNC, image: CGImage?)
     func handleDesktopSizeChange(width: Int, height: Int)
+    func handleFPSChange(eps: Double)
 }
