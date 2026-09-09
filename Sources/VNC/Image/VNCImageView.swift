@@ -2,24 +2,25 @@
 // Copyright (c) 2025-2026 foxterm.app
 // Created by foxterm@foxmail.com
 
-import Environment
 import SwiftUI
 import VNC
 
-struct VNCImageView: NSViewRepresentable {
+public struct VNCImageView: NSViewRepresentable {
     @Environment(\.cgImage) var cgImage
-    @Environment(\.isActive) var isActive
+    @Environment(\.isVNCActive) var isActive
     @Environment(\.sendPointerEvent) var sendPointerEvent
     @Environment(\.sendKeyEvent) var sendKeyEvent
 
-    func makeNSView(context _: Context) -> VNCEventHandlingView {
+    public init() {}
+
+    public func makeNSView(context _: Context) -> VNCEventHandlingView {
         let view = VNCEventHandlingView(frame: .zero)
         view.sendPointerEvent = sendPointerEvent
         view.sendKeyEvent = sendKeyEvent
         return view
     }
 
-    func updateNSView(_ view: VNCEventHandlingView, context _: Context) {
+    public func updateNSView(_ view: VNCEventHandlingView, context _: Context) {
         view.image = cgImage
         view.sendPointerEvent = sendPointerEvent
         view.sendKeyEvent = sendKeyEvent
@@ -39,9 +40,9 @@ struct VNCImageView: NSViewRepresentable {
     }
 }
 
-class VNCEventHandlingView: NSView {
-    var sendPointerEvent: sendPointerEvent?
-    var sendKeyEvent: sendKeyEvent?
+public class VNCEventHandlingView: NSView {
+    var sendPointerEvent: sendVNCPointerEvent?
+    var sendKeyEvent: sendVNCKeyEvent?
 
     private var lastModifierFlags: NSEvent.ModifierFlags = []
     private var currentButtonMask: Int32 = 0
@@ -88,6 +89,12 @@ class VNCEventHandlingView: NSView {
         layer?.addSublayer(imageLayer)
     }
 
+    deinit {
+        image = nil
+    }
+}
+
+public extension VNCEventHandlingView {
     override func layout() {
         super.layout()
         CATransaction.begin()
@@ -273,9 +280,5 @@ class VNCEventHandlingView: NSView {
 
     override var acceptsFirstResponder: Bool {
         true
-    }
-
-    deinit {
-        image = nil
     }
 }

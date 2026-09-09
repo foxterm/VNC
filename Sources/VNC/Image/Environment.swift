@@ -5,37 +5,39 @@
 import Foundation
 import SwiftUI
 
-extension EnvironmentValues {
+public extension EnvironmentValues {
     @Entry var cgImage: CGImage?
 
-    @Entry var sendPointerEvent: sendPointerEvent? = nil
-    @Entry var sendKeyEvent: sendKeyEvent? = nil
+    @Entry var sendPointerEvent: sendVNCPointerEvent? = nil
+    @Entry var sendKeyEvent: sendVNCKeyEvent? = nil
+
+    @Entry var isVNCActive: Bool = false
 }
 
-extension View {
-    func sendPointerEvent(_ action: @escaping sendPointerEvent.Action) -> some View {
-        environment(\.sendPointerEvent, WorkspaceVNC.sendPointerEvent(action: action))
+public extension View {
+    func sendPointerEvent(_ action: @escaping sendVNCPointerEvent.Action) -> some View {
+        environment(\.sendPointerEvent, sendVNCPointerEvent(action: action))
     }
 
-    func sendKeyEvent(_ action: @escaping sendKeyEvent.Action) -> some View {
-        environment(\.sendKeyEvent, WorkspaceVNC.sendKeyEvent(action: action))
+    func sendKeyEvent(_ action: @escaping sendVNCKeyEvent.Action) -> some View {
+        environment(\.sendKeyEvent, sendVNCKeyEvent(action: action))
     }
 }
 
 /// 鼠标事件
-struct sendPointerEvent {
-    typealias Action = (Int32, Int32, Int32) -> Void
-    let action: Action
-    func callAsFunction(x: Int32, y: Int32, buttonMask: Int32) {
+public struct sendVNCPointerEvent {
+    public typealias Action = (Int32, Int32, Int32) -> Void
+    public let action: Action
+    public func callAsFunction(x: Int32, y: Int32, buttonMask: Int32) {
         action(x, y, buttonMask)
     }
 }
 
 /// 键盘事件
-struct sendKeyEvent {
-    typealias Action = (Int32, Bool) -> Void
-    let action: Action
-    func callAsFunction(keysym: Int32, down: Bool) {
+public struct sendVNCKeyEvent {
+    public typealias Action = (Int32, Bool) -> Void
+    public let action: Action
+    public func callAsFunction(keysym: Int32, down: Bool) {
         action(keysym, down)
     }
 }
