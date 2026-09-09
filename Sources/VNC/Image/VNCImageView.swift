@@ -26,11 +26,11 @@ public struct VNCImageView: NSViewRepresentable {
         view.sendKeyEvent = sendKeyEvent
 
         if isActive {
-            DispatchQueue.main.async {
-                #if os(macOS)
+            #if os(macOS)
+                DispatchQueue.main.async {
                     view.window?.makeFirstResponder(view)
-                #endif
-            }
+                }
+            #endif
             view.becomeFirstResponder()
             view.isHidden = false
         } else {
