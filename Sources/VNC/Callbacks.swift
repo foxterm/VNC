@@ -64,14 +64,14 @@ extension VNC {
         client.pointee.GetCredential = { client, credType in
             guard let client, let dataPtr = client.pointee.clientData else { return nil }
             let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
-            return vnc.provideCredential(type: Int(credType))
+            return vnc.provideCredential(type: credType)
         }
 
         // 3. 图像帧更新回调
         client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
             guard let client, let dataPtr = client.pointee.clientData else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(UnsafeMutableRawPointer(dataPtr)).takeUnretainedValue()
-            vnc.handleFrameBufferUpdate(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
+            vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
         }
 
         // 4. 剪贴板文本回调 (ISO-Latin1)
@@ -187,33 +187,18 @@ public extension VNC {
 
     /// 提供纯密码 (VNC Auth)
     func providePassword() -> UnsafeMutablePointer<CChar>? {
-        password.bytes
+        getPassword()
     }
 
     /// 提供凭据 (账号/密码)
-    func provideCredential(type: Int) -> UnsafeMutablePointer<rfbCredential>? {
-        let cred = UnsafeMutablePointer<rfbCredential>.allocate(capacity: 1)
-        cred.initialize(to: rfbCredential())
-
-        if type == 1 { // Username
-            cred.pointee.userCredential.username = password.bytes
-            return cred
-        } else if type == 2 { // Password
-            cred.pointee.userCredential.password = password.bytes
-            return cred
-        }
-
-        cred.deallocate()
-        return nil
+    func provideCredential(type: Int32) -> UnsafeMutablePointer<rfbCredential>? {
+        getCredential(type)
     }
 
     // MARK: - 事件与数据更新回调响应
 
     /// 画面帧更新响应
     func handleFrameBufferUpdate(x _: Int, y _: Int, width _: Int, height _: Int) {
-        #if DEBUG
-            print("画面帧更新响应")
-        #endif
         if let client = rawClient {
             let currentWidth = Int(client.pointee.width)
             let currentHeight = Int(client.pointee.height)

@@ -80,7 +80,7 @@ public extension VNC {
     }
 
     /// 将NSEvent转换为X11 keysym
-    func convertKeysym(keyCode: UInt16, useUppercase: Bool) -> Int32 {
+    static func convertKeysym(keyCode: UInt16, useUppercase: Bool) -> Int32 {
         #if DEBUG
             print(keyCode, useUppercase)
         #endif

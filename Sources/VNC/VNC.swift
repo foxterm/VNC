@@ -41,7 +41,7 @@ public class VNC {
     }
 
     deinit {
-        // disconnect()
+        disconnect()
         #if DEBUG
             print("♻️", "VNC")
         #endif

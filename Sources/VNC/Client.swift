@@ -4,6 +4,7 @@
 
 import Extension
 import Foundation
+import libetos
 import libvncclient
 
 final class VNCAuthInfo {
@@ -137,10 +138,13 @@ public extension VNC {
     }
 
     func disconnect() {
+        etos_socket_shutdown(fd, SHUT_RD)
         socketShell?.cancel()
+        socketShell = nil
         if rawClient != nil {
             rfbClientCleanup(rawClient)
         }
+        vncDelegate = nil
         rawClient = nil
         freeSocket()
     }
