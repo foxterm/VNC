@@ -23,8 +23,10 @@ let package = Package(
             dependencies: [
                 .target(name: "libvncclient"),
                 .product(name: "Extension", package: "SSH"),
+                .product(name: "libtracked", package: "SSH"),
                 .product(name: "libetos", package: "SSH"),
                 .product(name: "Sync", package: "SSH"),
+                .product(name: "Proxy", package: "SSH"),
                 .product(name: "OpenSSL", package: "OpenSSL"),
             ],
             linkerSettings: [
