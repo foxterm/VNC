@@ -25,10 +25,9 @@ public extension VNC {
             client.pointee.appData.compressLevel = compressLevel
             client.pointee.appData.qualityLevel = qualityLevel
             client.pointee.appData.enableJPEG = enableJPEG ? 1 : 0
-//            client.pointee.appData.useRemoteCursor = 1 //远程光标渲染
+            // client.pointee.appData.useRemoteCursor = 1 //远程光标渲染
             client.pointee.appData.shareDesktop = 1 // 多端共享桌面
             client.pointee.appData.palmVNC = 1 // PalmVNC 协议兼容
-//            client.pointee.appData.scaleSetting = 0 //画面缩放比例
 
             client.pointee.sock = fd
 
@@ -150,7 +149,6 @@ public extension VNC {
         mutex.withLock {
             vncDelegate = nil
             if let rawClient {
-                rawClient.pointee.sock = -1
                 rfbClientCleanup(rawClient)
             }
             rawClient = nil
