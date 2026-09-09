@@ -145,9 +145,9 @@ public extension VNC {
         etos_socket_shutdown(fd, SHUT_RDWR)
 
         socketShell?.cancel()
+        socketShell = nil
 
         mutex.withLock {
-            socketShell = nil
             vncDelegate = nil
             if let rawClient {
                 rawClient.pointee.sock = -1
@@ -155,7 +155,6 @@ public extension VNC {
             }
             rawClient = nil
         }
-
         freeSocket()
     }
 }
