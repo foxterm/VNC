@@ -91,6 +91,12 @@ public class VNCEventHandlingView: PlatformView {
     private lazy var imageLayer: CALayer = {
         let layer = CALayer()
         layer.contentsGravity = .resize
+        layer.isOpaque = true
+        layer.actions = [
+            "contents": NSNull(),
+            "bounds": NSNull(),
+            "position": NSNull(),
+        ]
         #if os(macOS)
             layer.drawsAsynchronously = true
         #endif
@@ -119,11 +125,14 @@ public class VNCEventHandlingView: PlatformView {
     private func setup() {
         #if os(macOS)
             wantsLayer = true
-            layer?.addSublayer(imageLayer)
+            layerContentsRedrawPolicy = .never
         #elseif os(iOS)
-            layer.addSublayer(imageLayer)
             isMultipleTouchEnabled = true
         #endif
+
+        guard let mainLayer = layer else { return }
+        mainLayer.isOpaque = true
+        mainLayer.addSublayer(imageLayer)
     }
 
     deinit {
