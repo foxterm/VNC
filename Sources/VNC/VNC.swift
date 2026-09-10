@@ -23,7 +23,7 @@ public class VNC {
     public var enableJPEG = true
     public var qualityLevel: Int32 = 9
     public var compressLevel: Int32 = 6
-    public var isCursor = false
+    public var isCursor = true
     // public var viewOnly = false
 
     public var vncDelegate: VNCDelegate?
