@@ -24,7 +24,7 @@ public extension VNC {
     }
 
     /// 通过代理服务器发起连接
-    /// 支持 SOCKS5、HTTP 代理
+    /// 支持 SOCKS5、HTTP 代理等
     /// - Parameter proxy: 代理配置信息对象
     /// - Returns: 是否连接成功
     func connect(proxy: ProxyConfiguration) async -> Bool {
@@ -51,11 +51,18 @@ public extension VNC {
         etos_socket_strerror(socketLastError).string
     }
 
+    /// 启动 Socket 事件轮询监听
+    /// 将 Socket 设为非阻塞模式，并基于 GCD DispatchSourceRead 监听数据可读事件
     func pollShell() {
+        // 设置套接字为非阻塞模式
         SetNonBlocking(fd)
         etos_socket_set_blocking(fd, false)
+
+        // 重置并取消现有的监听源
         socketShell?.cancel()
         socketShell = nil
+
+        // 创建可读事件源并绑定回调
         socketShell = DispatchSource.makeReadSource(fileDescriptor: fd, queue: queueSocket)
         socketShell?.setEventHandler { [self] in
             processEvents()
@@ -63,9 +70,11 @@ public extension VNC {
         socketShell?.setCancelHandler {
             self.socketShell = nil
         }
+        // 启动事件监听
         socketShell?.resume()
     }
 
+    /// 关闭并释放底层套接字资源
     func freeSocket() {
         etos_socket_close(fd)
     }
