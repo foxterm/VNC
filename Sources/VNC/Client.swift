@@ -19,6 +19,11 @@ final class VNCAuthInfo {
 public extension VNC {
     func handshake() async -> Bool {
         await io.call { [self] in
+            #if DEBUG
+                rfbEnableClientLogging = 1
+            #else
+                rfbEnableClientLogging = 0
+            #endif
             guard let client = rfbGetClient(8, 3, 4) else {
                 return false
             }
@@ -28,7 +33,6 @@ public extension VNC {
             // client.pointee.appData.useRemoteCursor = 1 //远程光标渲染
             client.pointee.appData.shareDesktop = 1 // 多端共享桌面
             client.pointee.appData.palmVNC = 1 // PalmVNC 协议兼容
-
             client.pointee.sock = fd
 
             client.pointee.connectTimeout = timeout.uint32
