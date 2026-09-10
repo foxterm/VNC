@@ -16,16 +16,25 @@ public extension VNC {
 
     /// 获取凭据
     func getCredential(_ credentialType: Int32) -> UnsafeMutablePointer<_rfbCredential>? {
-        guard credentialType == rfbCredentialTypeUser else {
-            return nil
-        }
-
         let credentialPtr = UnsafeMutablePointer<_rfbCredential>.allocate(capacity: 1)
         credentialPtr.initialize(to: _rfbCredential())
 
-        credentialPtr.pointee.userCredential.username = username.bytes
-        credentialPtr.pointee.userCredential.password = password.bytes
+        if credentialType == rfbCredentialTypeX509 {
+            credentialPtr.pointee.x509Credential.x509CACertFile = caCertPath.bytes
+            credentialPtr.pointee.x509Credential.x509CACrlFile = caCrlPath.isEmpty ? nil : caCrlPath.bytes
+            credentialPtr.pointee.x509Credential.x509ClientCertFile = clientCertPath.isEmpty ? nil : clientCertPath.bytes
+            credentialPtr.pointee.x509Credential.x509ClientKeyFile = clientKeyPath.isEmpty ? nil : clientKeyPath.bytes
+            return credentialPtr
+        }
 
-        return credentialPtr
+        if credentialType == rfbCredentialTypeUser {
+            credentialPtr.pointee.userCredential.username = username.bytes
+            credentialPtr.pointee.userCredential.password = password.bytes
+
+            return credentialPtr
+        }
+        credentialPtr.deinitialize(count: 1)
+        credentialPtr.deallocate()
+        return nil
     }
 }
