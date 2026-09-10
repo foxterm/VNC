@@ -79,7 +79,7 @@
 #define LIBVNCSERVER_HAVE_LIBZ  1 
 
 /* Define to 1 if you have the `lzo2' library (-llzo2). */
-#define LIBVNCSERVER_HAVE_LZO  1
+/* #undef LIBVNCSERVER_HAVE_LZO */
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #define LIBVNCSERVER_HAVE_NETINET_IN_H  1 
@@ -161,7 +161,7 @@
 #define LIBVNCSERVER_HAVE_LIBSSL 1
 
 /* Define to 1 if Cyrus SASL is present */
-/* #undef LIBVNCSERVER_HAVE_SASL */
+#define LIBVNCSERVER_HAVE_SASL 1
 
 /* Define to 1 to build with websockets */
 #define LIBVNCSERVER_WITH_WEBSOCKETS 1
