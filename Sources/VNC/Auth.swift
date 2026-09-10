@@ -10,7 +10,6 @@ import SwiftUI
 public extension VNC {
     /// 获取密码
     func getPassword() -> UnsafeMutablePointer<CChar>? {
-        guard !password.isEmpty else { return nil }
         return password.bytes
     }
 
