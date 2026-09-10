@@ -14,16 +14,17 @@ import Foundation
 import libvncclient
 
 extension VNC {
+    /// 注册并配置 libvncclient 库的所有底层 C 回调函数
+    /// - Parameter client: libvncclient 结构体指针
     func setupCallbacks(client: UnsafeMutablePointer<rfbClient>) {
-        // 绑定 self 到 clientData
-        // 赋值
-
+        // 分配内存以绑定 self 实例指针到 C 结构的 clientData 中
         let node = UnsafeMutablePointer<rfbClientData>.allocate(capacity: 1)
         node.pointee.tag = nil
-        node.pointee.data = Unmanaged.passUnretained(self).toOpaque() // self 存在 data 里
+        node.pointee.data = Unmanaged.passUnretained(self).toOpaque() // 保持弱引用指针存入 data
         node.pointee.next = nil
         client.pointee.clientData = node
-        // 1. 纯密码认证回调
+
+        // 1. 纯密码认证回调 (VNC Standard Auth)
         client.pointee.GetPassword = { client in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return nil }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
@@ -31,7 +32,7 @@ extension VNC {
             return vnc.providePassword()
         }
 
-        // 2. 账号+密码认证回调
+        // 2. 账号+密码/凭据认证回调 (VeNCrypt / MSLogon 等)
         client.pointee.GetCredential = { client, credType in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return nil }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
@@ -39,14 +40,14 @@ extension VNC {
             return vnc.provideCredential(type: credType)
         }
 
-        // 3. 图像帧更新回调
+        // 3. 图像帧区域更新回调
         client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
         }
 
-        // 4. 剪贴板文本回调 (ISO-Latin1)
+        // 4. 剪贴板文本回调 (ISO-Latin1 编码)
         client.pointee.GotXCutText = { client, text, textlen in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
@@ -54,7 +55,7 @@ extension VNC {
             vnc.handleXCutText(str)
         }
 
-        // 5. 剪贴板文本回调 (UTF-8)
+        // 5. 剪贴板文本回调 (UTF-8 编码)
         client.pointee.GotXCutTextUTF8 = { client, text, textlen in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
@@ -62,7 +63,7 @@ extension VNC {
             vnc.handleXCutText(str)
         }
 
-        // 6. 聊天文本回调
+        // 6. 远程文本聊天消息回调
         client.pointee.HandleTextChat = { client, value, text in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
@@ -70,12 +71,14 @@ extension VNC {
             vnc.handleTextChat(code: Int(value), message: message)
         }
 
-        // 7. 响铃提示回调
+        // 7. 远程蜂鸣/响铃提示回调
         client.pointee.Bell = { client in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleBell()
         }
+
+        // 8. 单次图像帧更新完成回调
         client.pointee.FinishedFrameBufferUpdate = { client in
             guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
@@ -83,9 +86,12 @@ extension VNC {
         }
     }
 
+    /// 静态 RGB 色彩空间单例
     private static let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
+    /// 静态灰度色彩空间单例
     private static let grayColorSpace = CGColorSpaceCreateDeviceGray()
 
+    /// 解析底层 FrameBuffer 内存数据并生成 CGImage 传给代理
     func gotFrameBufferUpdate() {
         mutex.lock()
         defer {
@@ -106,6 +112,7 @@ extension VNC {
         let bitmapInfo: CGBitmapInfo
         let bitsPerComponent: Int
 
+        // 根据位深度匹配 Core Graphics 图像参数
         switch bitsPerPixel {
         case 32:
             colorSpace = Self.rgbColorSpace
@@ -123,6 +130,7 @@ extension VNC {
             return
         }
 
+        // 基于 C 内存创建 CGDataProvider 数据提供者
         guard let provider = CGDataProvider(
             dataInfo: nil,
             data: frameBuffer,
@@ -130,6 +138,7 @@ extension VNC {
             releaseData: { _, _, _ in }
         ) else { return }
 
+        // 构建 CGImage 位图对象
         guard let cgImage = CGImage(
             width: width,
             height: height,
@@ -144,6 +153,7 @@ extension VNC {
             intent: .defaultIntent
         ) else { return }
 
+        // 通过代理回调抛出位图
         vncDelegate?.buffer(vnc: self, image: cgImage)
     }
 }
@@ -158,7 +168,7 @@ public extension VNC {
         getPassword()
     }
 
-    /// 提供凭据 (账号/密码)
+    /// 提供凭据 (账号/密码/X509 证书)
     func provideCredential(type: Int32) -> UnsafeMutablePointer<rfbCredential>? {
         getCredential(type)
     }
@@ -187,7 +197,7 @@ public extension VNC {
         // 在这里写聊天消息接收逻辑
     }
 
-    /// 蜂鸣提示响应
+    /// 蜂鸣提示响应（播放系统音效与触发震动）
     func handleBell() {
         DispatchQueue.main.async {
             #if os(iOS)
@@ -199,6 +209,7 @@ public extension VNC {
                 generator.notificationOccurred(.warning)
 
             #else
+                // macOS 播放默认提示音
                 AudioServicesPlayAlertSound(1000)
             #endif
         }
@@ -212,13 +223,14 @@ public extension VNC {
         vncDelegate?.handleDesktopSizeChange(width: width, height: height)
     }
 
-    /// 每次帧缓冲区更新完成时触发（可用于计算 FPS 或性能指标）
+    /// 每次帧缓冲区更新完成时触发（用于实时计算 FPS 渲染帧率）
     func handleFinishedFrameBufferUpdate() {
         frameCount += 1
 
         let now = CFAbsoluteTimeGetCurrent()
         let elapsedTime = now - lastFPSUpdateTime
 
+        // 超过 1 秒则结算一次 FPS 并抛出回调
         if elapsedTime >= 1.0 {
             currentFPS = Double(frameCount) / elapsedTime
 
@@ -234,7 +246,7 @@ public extension VNC {
         }
     }
 
-    /// 剪贴板文本响应 (远端同步到本地)
+    /// 剪贴板文本响应 (远端同步到本地系统剪贴板)
     func handleXCutText(_ text: String) {
         guard !text.isEmpty else { return }
         DispatchQueue.main.async {
