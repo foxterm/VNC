@@ -71,12 +71,12 @@ public extension VNC {
 
     // MARK: - 键盘事件
 
-    func sendKeyEvent(keysym: UInt32, down: Bool) {
+    func sendKeyEvent(keysym: Int32, down: Bool) {
         guard isCursor else {
             return
         }
         guard let rawClient else { return }
-        SendKeyEvent(rawClient, keysym, down ? 1 : 0)
+        SendKeyEvent(rawClient, keysym.uint32, down ? 1 : 0)
     }
 
     /// 将NSEvent转换为X11 keysym
