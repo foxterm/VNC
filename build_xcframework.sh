@@ -5,13 +5,7 @@ set -e
 export GIT_ADVICE_DETACHED_HEAD=false
 
 # ================= 配置区 =================
-LIBVNC_TAG="LibVNCServer-0.9.15"
-OPENSSL_VERSION="3.6.3"
-ZLIB_VERSION="1.3.1"
-LZO_VERSION="2.10"
-JPEG_TURBO_VERSION="3.0.2"
-LIBPNG_VERSION="1.6.43"
-
+OPENSSL_VERSION="openssl-3.6.3"
 MACOS_TARGET="14.0"
 IOS_TARGET="16.0"
 
@@ -24,48 +18,45 @@ OUTPUT_DIR="$(pwd)/xcframework"
 mkdir -p "${SOURCE_DIR}" "${DEPS_DIR}" "${BUILD_DIR}" "${OUTPUT_DIR}"
 
 # 依赖检查
-for cmd in cmake ninja git curl tar xcodebuild libtool nasm lipo; do
+FOR_CMDS="cmake ninja git curl tar xcodebuild libtool nasm lipo autoconf automake"
+for cmd in $FOR_CMDS; do
     if ! command -v $cmd &> /dev/null; then
-        echo "Error: $cmd 未安装，请先安装 (例: brew install cmake ninja nasm)"
+        echo "Error: $cmd 未安装，请先安装 (例: brew install cmake ninja nasm autoconf automake libtool)"
         exit 1
     fi
 done
 
-# ================= 1. 源码下载 =================
-echo "==> [1/4] 下载官方源码..."
+# 检查 glibtoolize 或 libtoolize
+if ! command -v glibtoolize &> /dev/null && ! command -v libtoolize &> /dev/null; then
+    echo "Error: 未找到 libtoolize / glibtoolize，请先执行: brew install libtool"
+    exit 1
+fi
 
-# if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
-#     git -c advice.detachedHead=false clone --branch ${LIBVNC_TAG} --depth 1 https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
-# fi
+# ================= 1. 源码下载 (全部采用 Git Clone) =================
+echo "==> [1/4] 克隆依赖库与主项目源码..."
+
 if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
     git clone https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
 fi
 
 if [ ! -d "${SOURCE_DIR}/zlib" ]; then
-    curl -sSL "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_VERSION}.tar.gz" | tar -xz -C "${SOURCE_DIR}"
-    mv "${SOURCE_DIR}/zlib-${ZLIB_VERSION}" "${SOURCE_DIR}/zlib"
+    git clone https://github.com/madler/zlib.git "${SOURCE_DIR}/zlib"
 fi
 
 if [ ! -d "${SOURCE_DIR}/openssl" ]; then
-    curl -sSL "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VERSION}/openssl-${OPENSSL_VERSION}.tar.gz" | tar -xz -C "${SOURCE_DIR}" || \
-    curl -sSL "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" | tar -xz -C "${SOURCE_DIR}"
-    mv "${SOURCE_DIR}/openssl-${OPENSSL_VERSION}" "${SOURCE_DIR}/openssl"
-fi
-
-if [ ! -d "${SOURCE_DIR}/lzo" ]; then
-    curl -sSL "https://www.oberhumer.com/opensource/lzo/download/lzo-${LZO_VERSION}.tar.gz" | tar -xz -C "${SOURCE_DIR}"
-    mv "${SOURCE_DIR}/lzo-${LZO_VERSION}" "${SOURCE_DIR}/lzo"
+    echo "正在克隆 OpenSSL (${OPENSSL_VERSION})..."
+    git clone --depth 1 --branch "${OPENSSL_VERSION}" https://github.com/openssl/openssl.git "${SOURCE_DIR}/openssl"
 fi
 
 if [ ! -d "${SOURCE_DIR}/jpeg" ]; then
-    curl -sSL "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/${JPEG_TURBO_VERSION}.tar.gz" | tar -xz -C "${SOURCE_DIR}"
-    mv "${SOURCE_DIR}/libjpeg-turbo-${JPEG_TURBO_VERSION}" "${SOURCE_DIR}/jpeg"
+    git clone https://github.com/libjpeg-turbo/libjpeg-turbo.git "${SOURCE_DIR}/jpeg"
 fi
 
 if [ ! -d "${SOURCE_DIR}/png" ]; then
-    curl -sSL "https://downloads.sourceforge.net/project/libpng/libpng16/${LIBPNG_VERSION}/libpng-${LIBPNG_VERSION}.tar.gz" | tar -xz -C "${SOURCE_DIR}"
-    mv "${SOURCE_DIR}/libpng-${LIBPNG_VERSION}" "${SOURCE_DIR}/png"
+    git clone https://github.com/pnggroup/libpng.git "${SOURCE_DIR}/png"
 fi
+
+
 
 # ================= 2. 编译依赖库 (单架构基础函数) =================
 compile_deps_single_arch() {
@@ -92,27 +83,12 @@ compile_deps_single_arch() {
         cmake --build "${bdir}" --target install
     fi
 
-    # 2. LZO
-    if [ ! -f "${install_prefix}/lib/liblzo2.a" ]; then
-        local bdir="${BUILD_DIR}/deps_build/${target_id}/lzo"
-        cmake -B "${bdir}" -S "${SOURCE_DIR}/lzo" -G Ninja \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
-            -DCMAKE_OSX_SYSROOT="${sysroot}" \
-            -DCMAKE_OSX_ARCHITECTURES="${arch}" \
-            -DCMAKE_C_FLAGS="${min_flag}" \
-            -DENABLE_SHARED=OFF
-        cmake --build "${bdir}" --target install
-    fi
-
-    # 3. Libjpeg-turbo
+    # 2. Libjpeg-turbo
     if [ ! -f "${install_prefix}/lib/libjpeg.a" ]; then
         local bdir="${BUILD_DIR}/deps_build/${target_id}/jpeg"
         cmake -B "${bdir}" -S "${SOURCE_DIR}/jpeg" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
-            -DCMAKE_OSX_SYSROOT="${sysroot}" \
             -DCMAKE_OSX_ARCHITECTURES="${arch}" \
             -DCMAKE_C_FLAGS="${min_flag}" \
             -DENABLE_SHARED=OFF \
@@ -120,7 +96,7 @@ compile_deps_single_arch() {
         cmake --build "${bdir}" --target install
     fi
 
-    # 4. Libpng
+    # 3. Libpng
     if [ ! -f "${install_prefix}/lib/libpng.a" ]; then
         local bdir="${BUILD_DIR}/deps_build/${target_id}/png"
         cmake -B "${bdir}" -S "${SOURCE_DIR}/png" -G Ninja \
@@ -137,7 +113,7 @@ compile_deps_single_arch() {
         cmake --build "${bdir}" --target install
     fi
 
-    # 5. OpenSSL (仅供 LibVNC 链接编译)
+    # 4. OpenSSL
     if [ ! -f "${install_prefix}/lib/libssl.a" ]; then
         local sdk_path=$(xcrun --sdk ${sysroot} --show-sdk-path)
         local src_copy="${BUILD_DIR}/deps_build/${target_id}/openssl_src"
@@ -159,6 +135,7 @@ compile_deps_single_arch() {
         make install_dev
         popd > /dev/null
     fi
+
 }
 
 echo "==> [2/4] 构建各架构依赖库..."
@@ -196,9 +173,7 @@ compile_libvnc_single_arch() {
         -DWITH_ZLIB=ON \
         -DZLIB_INCLUDE_DIR="${deps}/include" \
         -DZLIB_LIBRARY="${deps}/lib/libz.a" \
-        -DWITH_LZO=ON \
-        -DLZO_INCLUDE_DIR="${deps}/include" \
-        -DLZO_LIBRARIES="${deps}/lib/liblzo2.a" \
+        -DWITH_LZO=OFF \
         -DWITH_JPEG=ON \
         -DJPEG_INCLUDE_DIR="${deps}/include" \
         -DJPEG_LIBRARY="${deps}/lib/libjpeg.a" \
@@ -209,11 +184,15 @@ compile_libvnc_single_arch() {
         -DOPENSSL_INCLUDE_DIR="${deps}/include" \
         -DOPENSSL_CRYPTO_LIBRARY="${deps}/lib/libcrypto.a" \
         -DOPENSSL_SSL_LIBRARY="${deps}/lib/libssl.a" \
+        -DWITH_SASL=ON \
+        -DWITH_TIGHTVNC_FILETRANSFER=ON \
         -DWITH_WEBSOCKETS=ON \
         -DWITH_24BPP=ON \
+        -DWITH_1BPP=ON \
+        -DWITH_2BPP=ON \
+        -DWITH_4BPP=ON \
         -DWITH_IPv6=ON \
         -DWITH_THREADS=ON \
-        -DWITH_SASL=OFF \
         -DWITH_GCRYPT=OFF \
         -DWITH_GNUTLS=OFF \
         -DWITH_EXAMPLES=OFF \
@@ -224,7 +203,10 @@ compile_libvnc_single_arch() {
 
     cmake --build "${bdir}" --target vncclient
 
-    libtool -static -o "${target_out}/libvncclient.a" "${bdir}/libvncclient.a" "${deps}/lib/liblzo2.a" "${deps}/lib/libjpeg.a" "${deps}/lib/libpng.a"
+    libtool -static -o "${target_out}/libvncclient.a" \
+        "${bdir}/libvncclient.a" \
+        "${deps}/lib/libjpeg.a" \
+        "${deps}/lib/libpng.a"
 }
 
 echo "==> [3/4] 编译各架构 LibVNCClient 并合并依赖..."
@@ -258,7 +240,6 @@ cp ${SOURCE_DIR}/libvncserver/include/rfb/rfbregion.h "${HEADERS_DIR}/"
 cp ${SOURCE_DIR}/libvncserver/include/rfb/rfbclient.h "${HEADERS_DIR}/"
 cp ${BUILD_DIR}/vnc_macos-arm64/include/rfb/rfbconfig.h "${HEADERS_DIR}/"
 
-# 生成顶层包装头文件，提前引入基础 C 标准库
 cat << 'EOF' > "${HEADERS_ROOT}/libvncclient.h"
 #ifndef LIBVNCCLIENT_UMBRELLA_H
 #define LIBVNCCLIENT_UMBRELLA_H
@@ -278,14 +259,12 @@ cat << 'EOF' > "${HEADERS_ROOT}/libvncclient.h"
 #endif
 EOF
 
-# 修改 module.modulemap 结构
 cat << 'EOF' > "${HEADERS_ROOT}/module.modulemap"
 module libvncclient {
     umbrella header "libvncclient.h"
     export *
 }
 EOF
-
 
 rm -rf "${OUTPUT_DIR}/libvncclient.xcframework"
 
@@ -296,6 +275,6 @@ xcodebuild -create-xcframework \
     -output "${OUTPUT_DIR}/libvncclient.xcframework"
 
 echo "=========================================="
-echo "完成！已成功构建 XCFramework"
+echo "完成！已成功构建包含 SASL 功能的 XCFramework"
 echo "输出文件: ${OUTPUT_DIR}/libvncclient.xcframework"
 echo "=========================================="
