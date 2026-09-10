@@ -8,18 +8,24 @@ import libvncclient
 import SwiftUI
 
 public extension VNC {
-    func getPassword() -> UnsafeMutablePointer<CChar> {
-        password.bytes
+    /// 获取密码
+    func getPassword() -> UnsafeMutablePointer<CChar>? {
+        guard !password.isEmpty else { return nil }
+        return password.bytes
     }
 
+    /// 获取凭据
     func getCredential(_ credentialType: Int32) -> UnsafeMutablePointer<_rfbCredential>? {
         guard credentialType == rfbCredentialTypeUser else {
             return nil
         }
-        let cPointer = UnsafeMutablePointer<_rfbCredential>.allocate(capacity: 1)
-        cPointer.pointee = rfbCredential()
-        cPointer.pointee.userCredential.username = username.bytes
-        cPointer.pointee.userCredential.password = password.bytes
-        return cPointer
+
+        let credentialPtr = UnsafeMutablePointer<_rfbCredential>.allocate(capacity: 1)
+        credentialPtr.initialize(to: _rfbCredential())
+
+        credentialPtr.pointee.userCredential.username = username.bytes
+        credentialPtr.pointee.userCredential.password = password.bytes
+
+        return credentialPtr
     }
 }
