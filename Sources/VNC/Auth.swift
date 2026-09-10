@@ -24,6 +24,14 @@ public extension VNC {
             credentialPtr.pointee.x509Credential.x509CACrlFile = caCrlPath.isEmpty ? nil : caCrlPath.bytes
             credentialPtr.pointee.x509Credential.x509ClientCertFile = clientCertPath.isEmpty ? nil : clientCertPath.bytes
             credentialPtr.pointee.x509Credential.x509ClientKeyFile = clientKeyPath.isEmpty ? nil : clientKeyPath.bytes
+            // rfbX509CrlVerifyNone: 不进行 CRL 校验
+            // rfbX509CrlVerifyClient: 仅校验服务器端点（叶子）证书
+            // rfbX509CrlVerifyAll: 校验服务器证书链中的所有证书
+            if caCrlPath.isEmpty {
+                credentialPtr.pointee.x509Credential.x509CrlVerifyMode = rfbX509CrlVerifyNone.uint8
+            } else {
+                credentialPtr.pointee.x509Credential.x509CrlVerifyMode = rfbX509CrlVerifyAll.uint8
+            }
             return credentialPtr
         }
 
