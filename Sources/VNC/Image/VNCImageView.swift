@@ -58,16 +58,20 @@ public struct VNCImageView: PlatformViewRepresentable {
         view.sendKeyEvent = sendKeyEvent
 
         if isActive {
-            #if os(macOS)
-                DispatchQueue.main.async {
-                    view.window?.makeFirstResponder(view)
-                }
-            #endif
-            view.becomeFirstResponder()
-            view.isHidden = false
+            if view.isHidden {
+                view.isHidden = false
+                #if os(macOS)
+                    DispatchQueue.main.async {
+                        view.window?.makeFirstResponder(view)
+                    }
+                #endif
+                view.becomeFirstResponder()
+            }
         } else {
-            view.resignFirstResponder()
-            view.isHidden = true
+            if !view.isHidden {
+                view.resignFirstResponder()
+                view.isHidden = true
+            }
         }
     }
 }
@@ -130,9 +134,10 @@ public class VNCEventHandlingView: PlatformView {
             isMultipleTouchEnabled = true
         #endif
 
-        guard let mainLayer = layer else { return }
-        mainLayer.isOpaque = true
-        mainLayer.addSublayer(imageLayer)
+        layer?.isOpaque = true
+        if let layer {
+            layer.addSublayer(imageLayer)
+        }
     }
 
     deinit {
@@ -158,31 +163,54 @@ public class VNCEventHandlingView: PlatformView {
     #endif
 }
 
-// MARK: - iOS Touch Event Handling
+// MARK: - iOS Touch & Keyboard Event Handling
 
 #if os(iOS)
-    public extension VNCEventHandlingView {
-        override func touchesBegan(_ touches: Set<UITouch>, with _: UIEvent?) {
+    extension VNCEventHandlingView: UIKeyInput {
+        public var hasText: Bool {
+            true
+        }
+
+        public func insertText(_ text: String) {
+            for scalar in text.unicodeScalars {
+                let keysym = Int32(scalar.value)
+                sendKeyEvent?(keysym: keysym, down: true)
+                sendKeyEvent?(keysym: keysym, down: false)
+            }
+        }
+
+        public func deleteBackward() {
+            let backspaceKeysym: Int32 = 0xFF08
+            sendKeyEvent?(keysym: backspaceKeysym, down: true)
+            sendKeyEvent?(keysym: backspaceKeysym, down: false)
+        }
+
+        override public func touchesBegan(_ touches: Set<UITouch>, with _: UIEvent?) {
             guard let touch = touches.first else { return }
             let point = touch.location(in: self)
-            currentButtonMask = 1 // 默认为左键
+
+            if !isFirstResponder {
+                becomeFirstResponder()
+            }
+
+            currentButtonMask = 1
             sendPointerEvent(at: point, buttonMask: currentButtonMask)
         }
 
-        override func touchesMoved(_ touches: Set<UITouch>, with _: UIEvent?) {
+        override public func touchesMoved(_ touches: Set<UITouch>, with _: UIEvent?) {
             guard let touch = touches.first else { return }
             let point = touch.location(in: self)
             sendPointerEvent(at: point, buttonMask: currentButtonMask)
         }
 
-        override func touchesEnded(_ touches: Set<UITouch>, with _: UIEvent?) {
+        override public func touchesEnded(_ touches: Set<UITouch>, with _: UIEvent?) {
             guard let touch = touches.first else { return }
             let point = touch.location(in: self)
             currentButtonMask = 0
             sendPointerEvent(at: point, buttonMask: currentButtonMask)
         }
 
-        override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        override public func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
             touchesEnded(touches, with: event)
         }
 
@@ -192,7 +220,7 @@ public class VNCEventHandlingView: PlatformView {
             sendPointerEvent?(x: remoteX, y: remoteY, buttonMask: buttonMask)
         }
 
-        override var canBecomeFirstResponder: Bool {
+        override public var canBecomeFirstResponder: Bool {
             true
         }
     }
