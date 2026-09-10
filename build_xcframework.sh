@@ -19,7 +19,7 @@ WORK_DIR="$(pwd)/xcframework_build"
 SOURCE_DIR="${WORK_DIR}/sources"
 DEPS_DIR="${WORK_DIR}/deps"
 BUILD_DIR="${WORK_DIR}/build"
-OUTPUT_DIR="$(pwd)/output"
+OUTPUT_DIR="$(pwd)/xcframework"
 
 mkdir -p "${SOURCE_DIR}" "${DEPS_DIR}" "${BUILD_DIR}" "${OUTPUT_DIR}"
 
