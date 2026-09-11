@@ -144,17 +144,23 @@ public extension VNC {
         vncDelegate?.handleDesktopSizeChange(width: width, height: height)
     }
 
-    /// 每次帧缓冲区更新完成时触发（用于实时计算 FPS 渲染帧率）
+    /// 每次帧缓冲区更新完成时触发
     func handleFinishedFrameBufferUpdate() {
-        frameCount += 1
-
         let now = CFAbsoluteTimeGetCurrent()
+
+        // 1. 检查距离上一次处理的时间间隔
+        let minInterval = 1.0 / maxFPS
+        if lastRenderTime > 0, (now - lastRenderTime) < minInterval {
+            return
+        }
+
+        lastRenderTime = now
+
+        frameCount += 1
         let elapsedTime = now - lastFPSUpdateTime
 
-        // 超过 1 秒则结算一次 FPS 并抛出回调
         if elapsedTime >= 1.0 {
             currentFPS = Double(frameCount) / elapsedTime
-
             // 重置计数器与时间戳
             frameCount = 0
             lastFPSUpdateTime = now
