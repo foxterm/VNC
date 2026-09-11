@@ -29,7 +29,6 @@ public extension VNC {
     /// - Returns: 是否完成握手并成功保持连接状态
     func handshake() async -> Bool {
         await io.call { [self] in
-            SetBlocking(fd)
             #if DEBUG
                 rfbEnableClientLogging = 1 // 调试模式下开启 C 库内部日志输出
             #else
@@ -48,7 +47,8 @@ public extension VNC {
             client.pointee.appData.useRemoteCursor = 0 // 远程光标渲染控制
             client.pointee.appData.shareDesktop = 1 // 开启多端共享桌面
             client.pointee.appData.palmVNC = 1 // 兼容 PalmVNC 扩展协议
-            client.pointee.readTimeout = timeout.uint32
+            // client.pointee.readTimeout = timeout.uint32
+            // client.pointee.connectTimeout = timeout.uint32
 
             // 设置像素格式与各种事件回调
             setupPreferredPixelFormat(client: client)
@@ -133,8 +133,7 @@ public extension VNC {
     internal func processEvents() -> Bool {
         guard let rawClient else { return false }
 
-        // 等待并检查是否有可读消息 (超时设为 50ms)
-        let rc = WaitForMessage(rawClient, 50000)
+        let rc = WaitForMessage(rawClient, 500)
         if rc < 0 {
             return false // 读取异常，连接可能已断开
         }

@@ -36,11 +36,11 @@ extension VNC {
         }
 
         // 3. 图像帧区域更新
-        client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
-            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-            vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
-        }
+//        client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
+//            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
+//            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+//           //vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
+//        }
 
         // 4. FinishedFrameBufferUpdate
         client.pointee.FinishedFrameBufferUpdate = { client in
@@ -71,14 +71,7 @@ extension VNC {
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleBell()
         }
-
-        // 8. 单次图像帧更新完成回调
-        client.pointee.FinishedFrameBufferUpdate = { client in
-            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-            vnc.handleFinishedFrameBufferUpdate()
-        }
-        // 9 设置 X509 证书跳过验证（防止自签名证书导致 TLS 握手终止）
+        // 8 设置 X509 证书跳过验证（防止自签名证书导致 TLS 握手终止）
         client.pointee.GetX509CertFingerprintMismatchDecision = { _, _, _, _, _, _ in
             // 默认信任服务端自签名证书（生产环境可在此检查指纹）
             1 // rfbBool true
@@ -116,7 +109,7 @@ public extension VNC {
 
                 handleDesktopSizeChange(width: currentWidth, height: currentHeight)
             }
-            gotFrameBufferUpdate()
+//            gotFrameBufferUpdate()
         }
     }
 
@@ -168,6 +161,7 @@ public extension VNC {
 
             vncDelegate?.handleFPSChange(eps: currentFPS)
         }
+        gotFrameBufferUpdate()
     }
 
     /// 剪贴板文本响应 (远端同步到本地系统剪贴板)
