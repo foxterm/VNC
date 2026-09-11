@@ -181,6 +181,6 @@ public extension VNC {
         }
 
         // 彻底关闭并释放底层套接字句柄
-        freeSocket()
+//        freeSocket()
     }
 }

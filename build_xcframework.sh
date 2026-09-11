@@ -35,8 +35,11 @@ fi
 # ================= 1. 源码下载 (全部采用 Git Clone) =================
 echo "==> [1/4] 克隆依赖库与主项目源码..."
 
+rm -rf "${SOURCE_DIR}/libvncserver"
+
 if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
-    git clone https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
+   git clone https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
+     # git clone --depth 1 --branch "LibVNCServer-0.9.15" https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
 fi
 
 if [ ! -d "${SOURCE_DIR}/zlib" ]; then

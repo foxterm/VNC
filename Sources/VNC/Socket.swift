@@ -6,35 +6,36 @@ import Extension
 import Foundation
 import libetos
 import libvncclient
-import Proxy
+
+// import Proxy
 
 public extension VNC {
-    /// 发起标准的 TCP 直接连接
-    /// 使用 libetos 库进行非阻塞/带超时的 Socket 初始化
-    /// - Returns: 是否连接成功
-    func connect() async -> Bool {
-        fd = await io.call { [self] in
-            etos_socket_connect(host, port.int32, timeout.int32 * 1000)
-        }
-        guard isConnected else {
-            error = socketLastStrError
-            return false
-        }
-        return true
-    }
-
-    /// 通过代理服务器发起连接
-    /// 支持 SOCKS5、HTTP 代理等
-    /// - Parameter proxy: 代理配置信息对象
-    /// - Returns: 是否连接成功
-    func connect(proxy: ProxyConfiguration) async -> Bool {
-        fd = await proxy.connect(host: host, port: port)
-        guard isConnected else {
-            error = socketLastStrError
-            return false
-        }
-        return true
-    }
+    // 发起标准的 TCP 直接连接
+    // 使用 libetos 库进行非阻塞/带超时的 Socket 初始化
+    // - Returns: 是否连接成功
+//    func connect() async -> Bool {
+//        fd = await io.call { [self] in
+//            etos_socket_connect(host, port.int32, timeout.int32 * 1000)
+//        }
+//        guard isConnected else {
+//            error = socketLastStrError
+//            return false
+//        }
+//        return true
+//    }
+//
+//    /// 通过代理服务器发起连接
+//    /// 支持 SOCKS5、HTTP 代理等
+//    /// - Parameter proxy: 代理配置信息对象
+//    /// - Returns: 是否连接成功
+//    func connect(proxy: ProxyConfiguration) async -> Bool {
+//        fd = await proxy.connect(host: host, port: port)
+//        guard isConnected else {
+//            error = socketLastStrError
+//            return false
+//        }
+//        return true
+//    }
 
     /// 检查底层 Socket 是否处于已连接状态
     var isConnected: Bool {
@@ -65,8 +66,7 @@ public extension VNC {
     func pollShell() {
         // 设置套接字为非阻塞模式
         SetNonBlocking(fd)
-        etos_socket_set_blocking(fd, false)
-
+        // etos_socket_set_blocking(fd, false)
         // 重置并取消现有的监听源
         socketShell?.cancel()
         socketShell = nil
@@ -82,9 +82,9 @@ public extension VNC {
         // 启动事件监听
         socketShell?.resume()
     }
-
-    /// 关闭并释放底层套接字资源
-    func freeSocket() {
-        etos_socket_close(fd)
-    }
+//
+//    /// 关闭并释放底层套接字资源
+//    func freeSocket() {
+//        etos_socket_close(fd)
+//    }
 }
