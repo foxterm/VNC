@@ -59,7 +59,6 @@ public extension VNC {
             client.pointee.serverPort = port.int32
 
             guard rfbInitClient(client, nil, nil) != 0 else {
-                rfbClientCleanup(client)
                 return false
             }
             fd = client.pointee.sock
