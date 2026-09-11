@@ -170,11 +170,6 @@ public class VNCEventHandlingView: PlatformView {
     #endif
 
     deinit {
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        imageLayer.contents = nil
-        imageLayer.removeFromSuperlayer()
-        CATransaction.commit()
         image = nil
         #if DEBUG
             print("♻️♻️♻️♻️", "VNCEventHandlingView")
