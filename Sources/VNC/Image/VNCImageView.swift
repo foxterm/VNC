@@ -271,6 +271,16 @@ public class VNCEventHandlingView: PlatformView {
             addTrackingArea(trackingArea)
         }
 
+        override func mouseEntered(with event: NSEvent) {
+            super.mouseEntered(with: event)
+            NSCursor.hide()
+        }
+
+        override func mouseExited(with event: NSEvent) {
+            super.mouseExited(with: event)
+            NSCursor.unhide()
+        }
+
         override func mouseMoved(with event: NSEvent) {
             processMouseEvent(event)
         }
