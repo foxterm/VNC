@@ -242,18 +242,28 @@ cp "${BUILD_DIR}/packaged_ios-arm64/libvncclient.a" "${BUILD_DIR}/packaged_ios/l
 
 # ================= 4. 构建 Headers 及最终 XCFramework =================
 echo "==> [4/4] 打包生成 XCFramework..."
-HEADERS_ROOT="${BUILD_DIR}/Headers"
-HEADERS_DIR="${BUILD_DIR}/Headers/rfb"
-mkdir -p "${HEADERS_DIR}"
 
-cp ${SOURCE_DIR}/libvncserver/include/rfb/keysym.h "${HEADERS_DIR}/"
-cp ${SOURCE_DIR}/libvncserver/include/rfb/threading.h "${HEADERS_DIR}/"
-cp ${SOURCE_DIR}/libvncserver/include/rfb/rfbproto.h "${HEADERS_DIR}/"
-cp ${SOURCE_DIR}/libvncserver/include/rfb/rfbregion.h "${HEADERS_DIR}/"
-cp ${SOURCE_DIR}/libvncserver/include/rfb/rfbclient.h "${HEADERS_DIR}/"
-cp ${BUILD_DIR}/vnc_macos-arm64/include/rfb/rfbconfig.h "${HEADERS_DIR}/"
+# 辅助函数：为不同 Platform 创建独立的 Headers 目录
+prepare_headers() {
+    local platform_name=$1
+    local sample_bdir=$2
+    local target_headers_dir="${BUILD_DIR}/Headers_${platform_name}"
+    local rfb_dir="${target_headers_dir}/rfb"
 
-cat << 'EOF' > "${HEADERS_ROOT}/libvncclient.h"
+    mkdir -p "${rfb_dir}"
+
+    # 1. 复制通用源码头文件
+    cp "${SOURCE_DIR}/libvncserver/include/rfb/keysym.h" "${rfb_dir}/"
+    cp "${SOURCE_DIR}/libvncserver/include/rfb/threading.h" "${rfb_dir}/"
+    cp "${SOURCE_DIR}/libvncserver/include/rfb/rfbproto.h" "${rfb_dir}/"
+    cp "${SOURCE_DIR}/libvncserver/include/rfb/rfbregion.h" "${rfb_dir}/"
+    cp "${SOURCE_DIR}/libvncserver/include/rfb/rfbclient.h" "${rfb_dir}/"
+
+    # 2. 复制该 Platform 专有的 rfbconfig.h (关键！决定是否有 SASL 宏)
+    cp "${BUILD_DIR}/${sample_bdir}/include/rfb/rfbconfig.h" "${rfb_dir}/"
+
+    # 3. 创建 Umbrella Header
+    cat << 'EOF' > "${target_headers_dir}/libvncclient.h"
 #ifndef LIBVNCCLIENT_UMBRELLA_H
 #define LIBVNCCLIENT_UMBRELLA_H
 
@@ -272,22 +282,30 @@ cat << 'EOF' > "${HEADERS_ROOT}/libvncclient.h"
 #endif
 EOF
 
-cat << 'EOF' > "${HEADERS_ROOT}/module.modulemap"
+    # 4. 创建 modulemap
+    cat << 'EOF' > "${target_headers_dir}/module.modulemap"
 module libvncclient {
     umbrella header "libvncclient.h"
     export *
 }
 EOF
+}
+
+# 分别准备 3 个平台各自专属的 Headers 目录
+prepare_headers "macos" "vnc_macos-arm64"
+prepare_headers "ios" "vnc_ios-arm64"
+prepare_headers "ios-simulator" "vnc_ios-sim-arm64"
 
 rm -rf "${OUTPUT_DIR}/libvncclient.xcframework"
 
+# 打包时各 Platform 关联自己专属的 -headers 目录
 xcodebuild -create-xcframework \
-    -library "${BUILD_DIR}/packaged_macos/libvncclient.a" -headers "${BUILD_DIR}/Headers" \
-    -library "${BUILD_DIR}/packaged_ios/libvncclient.a" -headers "${BUILD_DIR}/Headers" \
-    -library "${BUILD_DIR}/packaged_ios-simulator/libvncclient.a" -headers "${BUILD_DIR}/Headers" \
+    -library "${BUILD_DIR}/packaged_macos/libvncclient.a" -headers "${BUILD_DIR}/Headers_macos" \
+    -library "${BUILD_DIR}/packaged_ios/libvncclient.a" -headers "${BUILD_DIR}/Headers_ios" \
+    -library "${BUILD_DIR}/packaged_ios-simulator/libvncclient.a" -headers "${BUILD_DIR}/Headers_ios-simulator" \
     -output "${OUTPUT_DIR}/libvncclient.xcframework"
 
 echo "=========================================="
-echo "完成！已成功构建包含 SASL 功能的 XCFramework"
+echo "完成！已成功构建 XCFramework（iOS 已隔离并禁用 SASL）"
 echo "输出文件: ${OUTPUT_DIR}/libvncclient.xcframework"
 echo "=========================================="
