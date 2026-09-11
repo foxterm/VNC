@@ -2,9 +2,9 @@
 // Copyright (c) 2025-2026 foxterm.app
 // Created by foxterm@foxmail.com
 
+import libvncclient
 import SwiftUI
 import VNC
-
 #if os(macOS)
     import AppKit
 
@@ -360,25 +360,25 @@ public class VNCEventHandlingView: PlatformView {
             sendPointerEvent?(x: remoteX, y: remoteY, buttonMask: currentButtonMask)
         }
 
+        /// 捕获 Control / Shift / Option / Command 等修饰键变化
         override func flagsChanged(with event: NSEvent) {
-            if let keysym = Self.macModifierMap[event.keyCode] {
-                let wasPressed = isModifierPressed(event.keyCode, flags: lastModifierFlags)
-                let isPressed = isModifierPressed(event.keyCode, flags: event.modifierFlags)
-                if wasPressed != isPressed {
-                    sendKeyEvent?(keysym: keysym, down: isPressed)
-                }
-            }
-            lastModifierFlags = event.modifierFlags
-        }
+            let keyCode = event.keyCode
+            let keysym = VNC.convertKeysym(keyCode: keyCode, useUppercase: false)
 
-        private func isModifierPressed(_ keyCode: UInt16, flags: NSEvent.ModifierFlags) -> Bool {
+            guard keysym != XK_VoidSymbol else { return }
+
+            // 根据按键状态判断是按下还是释放
+            let isPressed: Bool
             switch keyCode {
-            case 55, 54: flags.contains(.command)
-            case 59, 62: flags.contains(.control)
-            case 58, 61: flags.contains(.option)
-            case 56, 60: flags.contains(.shift)
-            default: false
+            case 56, 59, 60: isPressed = event.modifierFlags.contains(.shift)
+            case 55, 54: isPressed = event.modifierFlags.contains(.command)
+            case 58, 61: isPressed = event.modifierFlags.contains(.option)
+            case 62, 63: isPressed = event.modifierFlags.contains(.control)
+            case 57: isPressed = event.modifierFlags.contains(.capsLock)
+            default: return
             }
+
+            sendKeyEvent?(keysym: keysym, down: isPressed)
         }
 
         override func keyDown(with event: NSEvent) {
