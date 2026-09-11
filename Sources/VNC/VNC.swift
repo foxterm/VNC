@@ -8,6 +8,8 @@ import Sync
 
 /// VNC 客户端核心控制类
 public class VNC {
+    /// 内部版本号
+    public static let version: String = LIBVNCSERVER_VERSION
     /// libvncclient 底层客户端结构体指针
     public internal(set) var rawClient: UnsafeMutablePointer<rfbClient>?
     /// 底层 TCP 套接字文件描述符
