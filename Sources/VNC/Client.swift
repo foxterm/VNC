@@ -39,7 +39,6 @@ public extension VNC {
             guard let client = rfbGetClient(8, 3, 4) else {
                 return false
             }
-
             // 配置客户端参数
             client.pointee.appData.compressLevel = compressLevel
             client.pointee.appData.qualityLevel = qualityLevel
@@ -48,25 +47,26 @@ public extension VNC {
             client.pointee.appData.shareDesktop = 1 // 开启多端共享桌面
             client.pointee.appData.palmVNC = 1 // 兼容 PalmVNC 扩展协议
             client.pointee.sock = fd // 绑定已经建立好的 TCP Socket
+            
+            client.pointee.appData.useRemoteCursor = 0
 
             client.pointee.connectTimeout = timeout.uint32
 
             // 设置像素格式与各种事件回调
             setupPreferredPixelFormat(client: client)
             setupCallbacks(client: client)
+            
 
             // 初始化 RFB 连接握手协议
             guard InitialiseRFBConnection(client) != 0 else {
                 rfbClientCleanup(client)
                 return false
             }
-
-            // 协商并发送像素格式与编码类型
+            
             guard SetFormatAndEncodings(client) != 0 else {
                 rfbClientCleanup(client)
                 return false
             }
-
             // 发送首个全屏画面刷新请求
             SendFramebufferUpdateRequest(client, 0, 0, client.pointee.width, client.pointee.height, 0)
 
@@ -97,61 +97,46 @@ public extension VNC {
     /// 根据配置设置客户端期望的像素格式
     /// - Parameter client: libvncclient 结构体指针
     private func setupPreferredPixelFormat(client: UnsafeMutablePointer<rfbClient>) {
-        // 获取默认格式
         var format = client.pointee.format
 
-        // 始终请求真彩色模式并强制使用小端序 (Little-Endian)
         format.trueColour = 1
-        format.bigEndian = 0 // 小端序更适合现代 Apple Silicon 与 x86_64 架构
+        format.bigEndian = 0
 
-        // 根据首选色深优化对应的像素格式设置
         switch preferredColorDepth {
         case .bit32:
-            // 32位模式优化为 BGRA8888 (Core Graphics 与 iOS GPU 渲染的最佳通用格式)
             format.bitsPerPixel = 32
-            format.depth = 24 // 实际有效色彩深度
+            format.depth = 24
             format.redMax = 255
             format.greenMax = 255
             format.blueMax = 255
-
-            // 优化为 BGRA 排列
             format.redShift = 16
             format.greenShift = 8
             format.blueShift = 0
 
         case .bit16:
-            // 16位模式优化为 RGB565 (内存占用低且效率极高的16位格式)
             format.bitsPerPixel = 16
             format.depth = 16
-            format.redMax = 31 // 5位 (32级)
-            format.greenMax = 63 // 6位 (64级)
-            format.blueMax = 31 // 5位 (32级)
-
-            // RGB565 位偏移排列 (小端序)
-            format.redShift = 11 // bits [11-15]
-            format.greenShift = 5 // bits [5-10]
-            format.blueShift = 0 // bits [0-4]
+            format.redMax = 31
+            format.greenMax = 63
+            format.blueMax = 31
+            format.redShift = 11
+            format.greenShift = 5
+            format.blueShift = 0
 
         case .bit8:
-            // 8位模式 - 使用 RGB332 低带宽格式
             format.bitsPerPixel = 8
             format.depth = 8
-            format.redMax = 7 // 3位 (8级)
-            format.greenMax = 7 // 3位 (8级)
-            format.blueMax = 3 // 2位 (4级)
-
-            // RGB332 位偏移排列 (3:3:2)
-            format.redShift = 5 // bits [5-7]
-            format.greenShift = 2 // bits [2-4]
-            format.blueShift = 0 // bits [0-1]
+            format.redMax = 7
+            format.greenMax = 7
+            format.blueMax = 3
+            format.redShift = 5
+            format.greenShift = 2
+            format.blueShift = 0
         }
 
-        // 应用更新后的像素格式
         client.pointee.format = format
-
-        // 允许服务端处理光标与格式转换
-        client.pointee.appData.useRemoteCursor = 1
     }
+
 
     /// 处理 VNC 消息驱动循环事件
     /// - Returns: 处理正常返回 true，出现网络异常或链接断开返回 false
@@ -159,7 +144,7 @@ public extension VNC {
         guard let rawClient else { return false }
 
         // 等待并检查是否有可读消息 (超时设为 50ms)
-        let rc = WaitForMessage(rawClient, 50)
+        let rc = WaitForMessage(rawClient, 50000)
         if rc < 0 {
             return false // 读取异常，连接可能已断开
         }
@@ -169,6 +154,8 @@ public extension VNC {
                 return false
             }
         }
+        SendFramebufferUpdateRequest(rawClient, 0, 0, rawClient.pointee.width, rawClient.pointee.height, 1)
+
         return true
     }
 
