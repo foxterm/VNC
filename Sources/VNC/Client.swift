@@ -91,6 +91,7 @@ public extension VNC {
         var format = client.pointee.format
 
         format.trueColour = 1
+
         format.bigEndian = 0
 
         switch preferredColorDepth {
