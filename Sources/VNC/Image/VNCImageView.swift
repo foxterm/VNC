@@ -130,14 +130,14 @@ public class VNCEventHandlingView: PlatformView {
         #if os(macOS)
             wantsLayer = true
             layerContentsRedrawPolicy = .never
+
+            layer?.isOpaque = true
+            layer?.addSublayer(imageLayer)
         #elseif os(iOS)
             isMultipleTouchEnabled = true
-        #endif
-
-        layer?.isOpaque = true
-        if let layer {
+            layer.isOpaque = true
             layer.addSublayer(imageLayer)
-        }
+        #endif
     }
 
     deinit {
