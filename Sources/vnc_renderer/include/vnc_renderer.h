@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+// 还原图片
 // 添加 CF_RETURNS_RETAINED 宏告诉 Swift ARC 自动接管内存
 CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width,
                                       int height,
