@@ -175,7 +175,7 @@ compile_libvnc_single_arch() {
     # 2. 重新编译前强制清理 CMake 构建缓存，防止头文件定义污染
     rm -rf "${bdir}"
 
-cmake -B "${bdir}" -S "${SOURCE_DIR}/libvncserver" -G Ninja \
+    cmake -B "${bdir}" -S "${SOURCE_DIR}/libvncserver" -G Ninja \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_OSX_SYSROOT="${sysroot}" \
