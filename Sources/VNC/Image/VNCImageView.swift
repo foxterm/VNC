@@ -53,24 +53,28 @@ public struct VNCImageView: PlatformViewRepresentable {
     }
 
     private func updateView(_ view: VNCEventHandlingView) {
-        view.image = cgImage
-        view.sendPointerEvent = sendPointerEvent
-        view.sendKeyEvent = sendKeyEvent
+        autoreleasepool {
+            view.image = cgImage
+            view.sendPointerEvent = sendPointerEvent
+            view.sendKeyEvent = sendKeyEvent
 
-        if isActive {
-            if view.isHidden {
-                view.isHidden = false
-                #if os(macOS)
-                    DispatchQueue.main.async {
-                        view.window?.makeFirstResponder(view)
-                    }
-                #endif
-                view.becomeFirstResponder()
-            }
-        } else {
-            if !view.isHidden {
-                view.resignFirstResponder()
-                view.isHidden = true
+            if isActive {
+                if view.isHidden {
+                    view.isHidden = false
+                    #if os(macOS)
+                        DispatchQueue.main.async {
+                            view.window?.makeFirstResponder(view)
+                        }
+                    #endif
+                    view.becomeFirstResponder()
+                }
+            } else {
+                if !view.isHidden {
+                    view.resignFirstResponder()
+                    view.isHidden = true
+                    // 隐藏时释放显存，避免后台驻留 GPU 内存
+                    view.image = nil
+                }
             }
         }
     }
@@ -88,7 +92,14 @@ public class VNCEventHandlingView: PlatformView {
 
     var image: CGImage? {
         didSet {
-            imageLayer.contents = image
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            if image == nil {
+                imageLayer.contents = nil
+            } else {
+                imageLayer.contents = image
+            }
+            CATransaction.commit()
         }
     }
 
@@ -101,9 +112,9 @@ public class VNCEventHandlingView: PlatformView {
             "bounds": NSNull(),
             "position": NSNull(),
         ]
-        #if os(macOS)
-            layer.drawsAsynchronously = true
-        #endif
+//        #if os(macOS)
+//            layer.drawsAsynchronously = true
+//        #endif
         return layer
     }()
 
@@ -141,6 +152,11 @@ public class VNCEventHandlingView: PlatformView {
     }
 
     deinit {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        imageLayer.contents = nil
+        imageLayer.removeFromSuperlayer()
+        CATransaction.commit()
         image = nil
         #if DEBUG
             print("♻️♻️♻️♻️", "VNCEventHandlingView")
