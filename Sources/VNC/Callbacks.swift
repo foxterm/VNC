@@ -99,8 +99,8 @@ public extension VNC {
     /// 画面帧更新响应
     func handleFrameBufferUpdate(x _: Int, y _: Int, width _: Int, height _: Int) {
         if let client = rawClient {
-            let currentWidth = Int(client.pointee.width)
-            let currentHeight = Int(client.pointee.height)
+            let currentWidth = client.pointee.width.int
+            let currentHeight = client.pointee.height.int
 
             // 当尺寸变化时触发桌面大小变更事件
             if currentWidth != lastWidth || currentHeight != lastHeight {
