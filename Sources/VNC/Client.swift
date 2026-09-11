@@ -44,7 +44,7 @@ public extension VNC {
             client.pointee.appData.qualityLevel = qualityLevel
             client.pointee.appData.enableJPEG = enableJPEG ? 1 : 0
             client.pointee.canHandleNewFBSize = 1
-            client.pointee.appData.useRemoteCursor = 0 // 远程光标渲染控制
+//            client.pointee.appData.useRemoteCursor = 1 // 远程光标渲染控制
             client.pointee.appData.shareDesktop = 1 // 开启多端共享桌面
             client.pointee.appData.palmVNC = 1 // 兼容 PalmVNC 扩展协议
             // client.pointee.readTimeout = timeout.uint32
