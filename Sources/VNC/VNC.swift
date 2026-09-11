@@ -58,9 +58,9 @@ public class VNC {
     internal(set) var frameCount: Int = 0
     /// 上一次更新 FPS 的时间戳
     internal(set) var lastFPSUpdateTime: TimeInterval = CFAbsoluteTimeGetCurrent()
-    // 限制FPS
-    public var maxFPS: Double = 30.0
-    internal(set) var lastRenderTime: CFAbsoluteTime = 0.0
+    /// 限制FPS
+    ///    public var maxFPS: Double = 30.0
+    ///    internal(set) var lastRenderTime: CFAbsoluteTime = 0.0
     /// 实时渲染帧率 (FPS)
     internal(set) var currentFPS: Double = 0.0
 
