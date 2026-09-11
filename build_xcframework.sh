@@ -158,7 +158,19 @@ compile_libvnc_single_arch() {
 
     mkdir -p "${target_out}"
 
+    # 1. 动态判断平台：如果是 iOS 相关 target 则关闭 SASL，否则开启
+    local with_sasl="ON"
+    if [[ "${target_id}" == *"ios"* ]]; then
+        with_sasl="OFF"
+        echo "---> [iOS 检测] 自动针对 iOS 平台禁用 SASL (-DWITH_SASL=OFF)"
+    else
+        echo "---> [macOS 检测] 保持 macOS 开启 SASL (-DWITH_SASL=ON)"
+    fi
+
     echo "---> 编译 LibVNCClient [${target_id}]..."
+
+    # 2. 重新编译前强制清理 CMake 构建缓存，防止头文件定义污染
+    rm -rf "${bdir}"
 
     cmake -B "${bdir}" -S "${SOURCE_DIR}/libvncserver" -G Ninja \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
@@ -184,7 +196,7 @@ compile_libvnc_single_arch() {
         -DOPENSSL_INCLUDE_DIR="${deps}/include" \
         -DOPENSSL_CRYPTO_LIBRARY="${deps}/lib/libcrypto.a" \
         -DOPENSSL_SSL_LIBRARY="${deps}/lib/libssl.a" \
-        -DWITH_SASL=ON \
+        -DWITH_SASL="${with_sasl}" \
         -DWITH_TIGHTVNC_FILETRANSFER=ON \
         -DWITH_WEBSOCKETS=ON \
         -DWITH_24BPP=ON \
@@ -208,6 +220,7 @@ compile_libvnc_single_arch() {
         "${deps}/lib/libjpeg.a" \
         "${deps}/lib/libpng.a"
 }
+
 
 echo "==> [3/4] 编译各架构 LibVNCClient 并合并依赖..."
 compile_libvnc_single_arch "macos-arm64" "arm64" "macosx" "-mmacosx-version-min=${MACOS_TARGET}"
