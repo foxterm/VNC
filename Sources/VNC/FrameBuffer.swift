@@ -8,7 +8,7 @@ import vnc_renderer
 extension VNC {
     func gotFrameBufferUpdate() {
         mutex.lock()
-        defer{
+        defer {
             mutex.unlock()
         }
         guard let client = rawClient,
