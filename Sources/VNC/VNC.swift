@@ -41,7 +41,6 @@ public class VNC {
     public var compressLevel: Int32 = 6
     /// 是否显示/同步远程光标
     public var isCursor = true
-    // public var viewOnly = false // 仅查看模式开关
 
     /// CA 证书文件路径 (X509 认证)
     public var caCertPath: String = ""
@@ -59,6 +58,9 @@ public class VNC {
     internal(set) var frameCount: Int = 0
     /// 上一次更新 FPS 的时间戳
     internal(set) var lastFPSUpdateTime: TimeInterval = CFAbsoluteTimeGetCurrent()
+    // 限制FPS
+    public var maxFPS: Double = 30.0
+    internal(set) var lastRenderTime: CFAbsoluteTime = 0.0
     /// 实时渲染帧率 (FPS)
     internal(set) var currentFPS: Double = 0.0
 
