@@ -22,6 +22,7 @@ let package = Package(
             name: "VNC",
             dependencies: [
                 .target(name: "libvncclient"),
+                .target(name: "vnc_renderer"),
                 .product(name: "Extension", package: "SSH"),
                 .product(name: "libetos", package: "SSH"),
                 .product(name: "Sync", package: "SSH"),
@@ -31,6 +32,11 @@ let package = Package(
             linkerSettings: [
                 .linkedLibrary("z"),
                 .linkedLibrary("sasl2", .when(platforms: [.macOS])),
+            ]
+        ),
+        .target(
+            name: "vnc_renderer",
+            dependencies: [
             ]
         ),
         .binaryTarget(
