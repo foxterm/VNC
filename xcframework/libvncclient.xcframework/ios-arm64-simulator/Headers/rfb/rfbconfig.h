@@ -13,7 +13,7 @@
 #define LIBVNCSERVER_HAVE_DIRENT_H 1
 
 /* Define to 1 if you have the <endian.h> header file. */
-/* #undef LIBVNCSERVER_HAVE_ENDIAN_H */
+#define LIBVNCSERVER_HAVE_ENDIAN_H 1
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #define LIBVNCSERVER_HAVE_FCNTL_H  1 
@@ -161,7 +161,7 @@
 #define LIBVNCSERVER_HAVE_LIBSSL 1
 
 /* Define to 1 if Cyrus SASL is present */
-#define LIBVNCSERVER_HAVE_SASL 1
+/* #undef LIBVNCSERVER_HAVE_SASL */
 
 /* Define to 1 to build with websockets */
 #define LIBVNCSERVER_WITH_WEBSOCKETS 1
