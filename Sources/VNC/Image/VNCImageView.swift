@@ -142,6 +142,9 @@ public class VNCEventHandlingView: PlatformView {
 
     deinit {
         image = nil
+        #if DEBUG
+            print("♻️♻️♻️♻️", "VNCEventHandlingView")
+        #endif
     }
 
     #if os(macOS)
