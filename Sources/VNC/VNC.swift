@@ -17,6 +17,8 @@ public class VNC {
     /// 记录最近一次发生的错误描述
     public internal(set) var error: String?
 
+    public internal(set) var cutText: String?
+
     /// 套接字事件处理队列（主线程）
     let queueSocket: DispatchQueue = .main
     /// 套接字读取事件监听源

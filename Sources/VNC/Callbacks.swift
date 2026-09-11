@@ -173,14 +173,15 @@ public extension VNC {
     /// 剪贴板文本响应 (远端同步到本地系统剪贴板)
     func handleXCutText(_ text: String) {
         guard !text.isEmpty else { return }
-        DispatchQueue.main.async {
-            #if os(iOS)
-                UIPasteboard.general.string = text
-            #elseif os(macOS)
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
-            #endif
-        }
+        cutText = text
+//        DispatchQueue.main.async {
+//            #if os(iOS)
+//                UIPasteboard.general.string = text
+//            #elseif os(macOS)
+//                NSPasteboard.general.clearContents()
+//                NSPasteboard.general.setString(text, forType: .string)
+//            #endif
+//        }
     }
 
     /// 将本地剪贴板文本同步给服务端 (客户端发送到远端)
