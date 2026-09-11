@@ -175,7 +175,7 @@ compile_libvnc_single_arch() {
     # 2. 重新编译前强制清理 CMake 构建缓存，防止头文件定义污染
     rm -rf "${bdir}"
 
-    cmake -B "${bdir}" -S "${SOURCE_DIR}/libvncserver" -G Ninja \
+cmake -B "${bdir}" -S "${SOURCE_DIR}/libvncserver" -G Ninja \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_OSX_SYSROOT="${sysroot}" \
@@ -194,18 +194,16 @@ compile_libvnc_single_arch() {
         -DJPEG_LIBRARY="${deps}/lib/libjpeg.a" \
         -DWITH_PNG=ON \
         -DPNG_PNG_INCLUDE_DIR="${deps}/include" \
+        -DPNG_INCLUDE_DIR="${deps}/include" \
         -DPNG_LIBRARY="${deps}/lib/libpng.a" \
         -DWITH_OPENSSL=ON \
+        -DOPENSSL_ROOT_DIR="${deps}" \
         -DOPENSSL_INCLUDE_DIR="${deps}/include" \
-        -DOPENSSL_CRYPTO_LIBRARY="${deps}/lib/libcrypto.a" \
-        -DOPENSSL_SSL_LIBRARY="${deps}/lib/libssl.a" \
+        -DOPENSSL_LIBRARIES="${deps}/lib/libssl.a;${deps}/lib/libcrypto.a" \
         -DWITH_SASL="${with_sasl}" \
         -DWITH_TIGHTVNC_FILETRANSFER=ON \
         -DWITH_WEBSOCKETS=ON \
         -DWITH_24BPP=ON \
-        -DWITH_1BPP=ON \
-        -DWITH_2BPP=ON \
-        -DWITH_4BPP=ON \
         -DWITH_IPv6=ON \
         -DWITH_THREADS=ON \
         -DWITH_GCRYPT=OFF \
@@ -215,6 +213,7 @@ compile_libvnc_single_arch() {
         -DWITH_SDL=OFF \
         -DWITH_GTK=OFF \
         -DWITH_QT=OFF
+
 
     cmake --build "${bdir}" --target vncclient
 
