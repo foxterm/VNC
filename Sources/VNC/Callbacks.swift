@@ -147,13 +147,10 @@ public extension VNC {
     /// 每次帧缓冲区更新完成时触发
     func handleFinishedFrameBufferUpdate() {
         let now = CFAbsoluteTimeGetCurrent()
-
-        // 1. 检查距离上一次处理的时间间隔
         let minInterval = 1.0 / maxFPS
         if lastRenderTime > 0, (now - lastRenderTime) < minInterval {
             return
         }
-
         lastRenderTime = now
 
         frameCount += 1
@@ -161,7 +158,6 @@ public extension VNC {
 
         if elapsedTime >= 1.0 {
             currentFPS = Double(frameCount) / elapsedTime
-            // 重置计数器与时间戳
             frameCount = 0
             lastFPSUpdateTime = now
 
