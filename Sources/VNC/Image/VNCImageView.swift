@@ -151,18 +151,6 @@ public class VNCEventHandlingView: PlatformView {
         #endif
     }
 
-    deinit {
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        imageLayer.contents = nil
-        imageLayer.removeFromSuperlayer()
-        CATransaction.commit()
-        image = nil
-        #if DEBUG
-            print("♻️♻️♻️♻️", "VNCEventHandlingView")
-        #endif
-    }
-
     #if os(macOS)
         override public func layout() {
             super.layout()
@@ -180,6 +168,18 @@ public class VNCEventHandlingView: PlatformView {
             CATransaction.commit()
         }
     #endif
+
+    deinit {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        imageLayer.contents = nil
+        imageLayer.removeFromSuperlayer()
+        CATransaction.commit()
+        image = nil
+        #if DEBUG
+            print("♻️♻️♻️♻️", "VNCEventHandlingView")
+        #endif
+    }
 }
 
 // MARK: - iOS Touch & Keyboard Event Handling
