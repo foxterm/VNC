@@ -51,6 +51,15 @@ public extension VNC {
         etos_socket_strerror(socketLastError).string
     }
 
+    var trafficStats: (send: UInt64, recv: UInt64) {
+        guard fd >= 0 else { return (0, 0) }
+        var stats = FdTrafficStats()
+        guard etos_socket_get_traffic_stats(fd, &stats) == 0 else {
+            return (0, 0)
+        }
+        return (etos_stats_get_tx(&stats), etos_stats_get_rx(&stats))
+    }
+
     /// 启动 Socket 事件轮询监听
     /// 将 Socket 设为非阻塞模式，并基于 GCD DispatchSourceRead 监听数据可读事件
     func pollShell() {
