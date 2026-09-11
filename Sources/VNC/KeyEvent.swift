@@ -82,7 +82,7 @@ public extension VNC {
     /// 将NSEvent转换为X11 keysym
     static func convertKeysym(keyCode: UInt16, useUppercase: Bool) -> Int32 {
         #if DEBUG
-            print(keyCode, useUppercase)
+            print("keyCode: \(keyCode), useUppercase: \(useUppercase)")
         #endif
         switch keyCode {
         // 字母键 (主键盘区)
@@ -113,31 +113,31 @@ public extension VNC {
         case 45: return useUppercase ? XK_N : XK_n
         case 46: return useUppercase ? XK_M : XK_m
         // 数字键和符号键 (主键盘区)
-        case 18: return useUppercase ? XK_1 : XK_exclam // 1!
-        case 19: return useUppercase ? XK_2 : XK_at // 2@
-        case 20: return useUppercase ? XK_3 : XK_numbersign // 3#
-        case 21: return useUppercase ? XK_4 : XK_dollar // 4$
-        case 23: return useUppercase ? XK_5 : XK_percent // 5%
-        case 22: return useUppercase ? XK_6 : XK_asciicircum // 6^
-        case 26: return useUppercase ? XK_7 : XK_ampersand // 7&
-        case 28: return useUppercase ? XK_8 : XK_asterisk // 8*
-        case 25: return useUppercase ? XK_9 : XK_parenleft // 9(
-        case 29: return useUppercase ? XK_0 : XK_parenright // 0)
+        case 18: return useUppercase ? XK_exclam : XK_1 // 1!
+        case 19: return useUppercase ? XK_at : XK_2 // 2@
+        case 20: return useUppercase ? XK_numbersign : XK_3 // 3#
+        case 21: return useUppercase ? XK_dollar : XK_4 // 4$
+        case 23: return useUppercase ? XK_percent : XK_5 // 5%
+        case 22: return useUppercase ? XK_asciicircum : XK_6 // 6^
+        case 26: return useUppercase ? XK_ampersand : XK_7 // 7&
+        case 28: return useUppercase ? XK_asterisk : XK_8 // 8*
+        case 25: return useUppercase ? XK_parenleft : XK_9 // 9(
+        case 29: return useUppercase ? XK_parenright : XK_0 // 0)
         // 方括号和反斜杠
-        case 33: return useUppercase ? XK_bracketleft : XK_braceleft // [{
-        case 30: return useUppercase ? XK_bracketright : XK_braceright // ]}
-        case 42: return useUppercase ? XK_backslash : XK_bar // \|
-        // 分号区域
-        case 41: return useUppercase ? XK_semicolon : XK_colon // ;:
-        case 39: return useUppercase ? XK_quoteright : XK_quotedbl // '"
+        case 33: return useUppercase ? XK_braceleft : XK_bracketleft // [{
+        case 30: return useUppercase ? XK_braceright : XK_bracketright // ]}
+        case 42: return useUppercase ? XK_bar : XK_backslash // \|
+        // 分号与引號
+        case 41: return useUppercase ? XK_colon : XK_semicolon // ;:
+        case 39: return useUppercase ? XK_quotedbl : XK_quoteright // '"
         case 50: return useUppercase ? XK_asciitilde : XK_grave // `~
         // 逗号、句号和斜杠
         case 43: return useUppercase ? XK_less : XK_comma // ,<
-        case 47: return useUppercase ? XK_period : XK_greater // .>
-        case 44: return useUppercase ? XK_slash : XK_question // /?
+        case 47: return useUppercase ? XK_greater : XK_period // .>
+        case 44: return useUppercase ? XK_question : XK_slash // /?
         // 连字符和等号
-        case 27: return useUppercase ? XK_minus : XK_underscore // -_
-        case 24: return useUppercase ? XK_equal : XK_plus // =+
+        case 27: return useUppercase ? XK_underscore : XK_minus // -_
+        case 24: return useUppercase ? XK_plus : XK_equal // =+
         // 控制键
         case 49: return XK_space
         case 53: return XK_Escape
@@ -145,18 +145,18 @@ public extension VNC {
         case 51: return XK_BackSpace
         case 117: return XK_Delete
         case 36: return XK_Return
-        case 76: return XK_KP_Enter // 另一个回车键(小键盘)
+        case 76: return XK_KP_Enter
         case 57: return XK_Caps_Lock
         // 修饰键
-        case 54: return XK_Meta_R // Right Command
-        case 55: return XK_Meta_L // Left Command
-        case 56: return XK_Shift_L // Left Shift (注意: 您的信息中列出两次)
-        case 59: return XK_Shift_L // Left Shift
-        case 60: return XK_Shift_R // Right Shift
-        case 58: return XK_Alt_L // Left Option
-        case 61: return XK_Alt_R // Right Option
-        case 63: return XK_Control_L // Left Control (注意: 您的信息中左右控制键keyCode似乎颠倒了)
-        case 62: return XK_Control_R // Right Control
+        case 54: return XK_Meta_R
+        case 55: return XK_Meta_L
+        case 56: return XK_Shift_L
+        case 59: return XK_Shift_L
+        case 60: return XK_Shift_R
+        case 58: return XK_Alt_L
+        case 61: return XK_Alt_R
+        case 63: return XK_Control_L
+        case 62: return XK_Control_R
         // 功能键
         case 122: return XK_F1
         case 120: return XK_F2
@@ -204,9 +204,9 @@ public extension VNC {
         case 78: return XK_KP_Subtract
         case 81: return XK_KP_Equal
         case 65: return XK_KP_Decimal
-        case 71: return XK_Clear // Num Lock 或 Clear
-        // 其他特殊键
-        case 10: return XK_section // §± (取决于键盘布局)
+        case 71: return XK_Clear
+        // 其他
+        case 10: return XK_section
         default:
             return XK_VoidSymbol
         }
@@ -227,17 +227,17 @@ public extension VNC {
         SendKeyEvent(rawClient, keysym, pressed ? 1 : 0)
     }
 
-    /// 发送特殊键事件
-    /// - Parameters:
-    ///   - specialKey: 特殊键类型
-    ///   - pressed: 是否按下
-    func sendSpecialKeyEvent(_ specialKey: SpecialKey, pressed: Bool) {
-        guard isCursor else {
-            return
-        }
-        guard let rawClient else { return }
-        SendKeyEvent(rawClient, specialKey.keysym.uint32, pressed ? 1 : 0)
-    }
+//    /// 发送特殊键事件
+//    /// - Parameters:
+//    ///   - specialKey: 特殊键类型
+//    ///   - pressed: 是否按下
+//    func sendSpecialKeyEvent(_ specialKey: SpecialKey, pressed: Bool) {
+//        guard isCursor else {
+//            return
+//        }
+//        guard let rawClient else { return }
+//        SendKeyEvent(rawClient, specialKey.keysym.uint32, pressed ? 1 : 0)
+//    }
 
     // MARK: - 键盘映射辅助函数
 
