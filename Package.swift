@@ -13,7 +13,7 @@ let package = Package(
     ],
     dependencies: [
         .package(
-            url: "https://github.com/krzyzanowskim/OpenSSL.git", .upToNextMajor(from: "3.6.0001")
+            url: "https://github.com/krzyzanowskim/OpenSSL.git", from: "3.6.0001"
         ),
         .package(url: "https://github.com/foxterm/SSH.git", branch: "main"),
     ],
@@ -23,7 +23,6 @@ let package = Package(
             dependencies: [
                 .target(name: "libvncclient"),
                 .product(name: "Extension", package: "SSH"),
-                .product(name: "libtracked", package: "SSH"),
                 .product(name: "libetos", package: "SSH"),
                 .product(name: "Sync", package: "SSH"),
                 .product(name: "Proxy", package: "SSH"),
