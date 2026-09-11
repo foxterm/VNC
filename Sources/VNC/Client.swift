@@ -131,7 +131,7 @@ public extension VNC {
     /// 处理 VNC 消息驱动循环事件
     /// - Returns: 处理正常返回 true，出现网络异常或链接断开返回 false
     internal func processEvents() -> Bool {
-        guard let rawClient else { return false }
+        guard let rawClient, isConnected else { return false }
 
         let rc = WaitForMessage(rawClient, 500)
         if rc < 0 {
