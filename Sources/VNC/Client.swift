@@ -142,8 +142,8 @@ public extension VNC {
             guard HandleRFBServerMessage(rawClient) != 0 else {
                 return false
             }
+            SendFramebufferUpdateRequest(rawClient, 0, 0, rawClient.pointee.width, rawClient.pointee.height, 1)
         }
-        // SendFramebufferUpdateRequest(rawClient, 0, 0, rawClient.pointee.width, rawClient.pointee.height, 1)
 
         return true
     }
