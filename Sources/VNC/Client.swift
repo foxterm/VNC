@@ -29,8 +29,7 @@ public extension VNC {
     /// - Returns: 是否完成握手并成功保持连接状态
     func handshake() async -> Bool {
         await io.call { [self] in
-//            SetBlocking(fd)
-//            etos_socket_set_blocking(fd, true)
+            SetBlocking(fd)
             #if DEBUG
                 rfbEnableClientLogging = 1 // 调试模式下开启 C 库内部日志输出
             #else
@@ -53,15 +52,17 @@ public extension VNC {
             // 设置像素格式与各种事件回调
             setupPreferredPixelFormat(client: client)
             setupCallbacks(client: client)
+            client.pointee.readTimeout = timeout.uint32
+//            client.pointee.serverHost = host.bytes
+//            client.pointee.serverPort = port.int32
 
-            client.pointee.connectTimeout = timeout.uint32
-            client.pointee.serverHost = host.bytes
-            client.pointee.serverPort = port.int32
+            client.pointee.sock = fd
 
-            guard rfbInitClient(client, nil, nil) != 0 else {
+            guard rfbClientInitialise(client) != 0 else {
+                rfbClientCleanup(client)
                 return false
             }
-            fd = client.pointee.sock
+            // fd = client.pointee.sock
 
 //            guard InitialiseRFBConnection(client) != 0 else {
 //                rfbClientCleanup(client)
@@ -180,6 +181,6 @@ public extension VNC {
         }
 
         // 彻底关闭并释放底层套接字句柄
-//        freeSocket()
+        freeSocket()
     }
 }
