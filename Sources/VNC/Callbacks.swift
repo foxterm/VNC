@@ -18,46 +18,40 @@ extension VNC {
     /// - Parameter client: libvncclient 结构体指针
     func setupCallbacks(client: UnsafeMutablePointer<rfbClient>) {
         // 分配内存以绑定 self 实例指针到 C 结构的 clientData 中
-        let node = UnsafeMutablePointer<rfbClientData>.allocate(capacity: 1)
-        node.pointee.tag = nil
-        node.pointee.data = Unmanaged.passUnretained(self).toOpaque() // 保持弱引用指针存入 data
-        node.pointee.next = nil
-        client.pointee.clientData = node
+        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
+        rfbClientSetClientData(client, nil, selfPtr)
 
-        // 1. 纯密码认证回调 (VNC Standard Auth)
-        client.pointee.GetPassword = { client in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return nil }
-            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+        // 1. 纯密码认证
+           client.pointee.GetPassword = { client in
+               guard let client, let data = rfbClientGetClientData(client, nil) else { return nil }
+               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+               return vnc.providePassword()
+           }
 
-            return vnc.providePassword()
-        }
+           // 2. VeNCrypt / 凭据认证
+           client.pointee.GetCredential = { client, credType in
+               guard let client, let data = rfbClientGetClientData(client, nil) else { return nil }
+               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+               return vnc.provideCredential(type: credType)
+           }
 
-        // 2. 账号+密码/凭据认证回调 (VeNCrypt / MSLogon 等)
-        client.pointee.GetCredential = { client, credType in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return nil }
-            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+           // 3. 图像帧区域更新
+           client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
+               guard let client, let data = rfbClientGetClientData(client, nil) else { return }
+               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+               vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
+           }
 
-            return vnc.provideCredential(type: credType)
-        }
-
-        // 3. 图像帧区域更新回调
-        client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-            vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
-        }
-
-        // 4. 剪贴板文本回调 (ISO-Latin1 编码)
-        client.pointee.GotXCutText = { client, text, textlen in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
-            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-            let str = String(bytes: UnsafeBufferPointer(start: UnsafePointer<UInt8>(OpaquePointer(text)), count: Int(textlen)), encoding: .isoLatin1) ?? ""
-            vnc.handleXCutText(str)
-        }
+           // 4. FinishedFrameBufferUpdate
+           client.pointee.FinishedFrameBufferUpdate = { client in
+               guard let client, let data = rfbClientGetClientData(client, nil) else { return }
+               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+               vnc.handleFinishedFrameBufferUpdate()
+           }
 
         // 5. 剪贴板文本回调 (UTF-8 编码)
         client.pointee.GotXCutTextUTF8 = { client, text, textlen in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             let str = String(bytes: UnsafeBufferPointer(start: UnsafePointer<UInt8>(OpaquePointer(text)), count: Int(textlen)), encoding: .utf8) ?? ""
             vnc.handleXCutText(str)
@@ -65,7 +59,7 @@ extension VNC {
 
         // 6. 远程文本聊天消息回调
         client.pointee.HandleTextChat = { client, value, text in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             let message = text.map { String(cString: $0) } ?? ""
             vnc.handleTextChat(code: Int(value), message: message)
@@ -73,17 +67,22 @@ extension VNC {
 
         // 7. 远程蜂鸣/响铃提示回调
         client.pointee.Bell = { client in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleBell()
         }
 
         // 8. 单次图像帧更新完成回调
         client.pointee.FinishedFrameBufferUpdate = { client in
-            guard let client, let node = client.pointee.clientData, let data = node.pointee.data else { return }
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
             let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
             vnc.handleFinishedFrameBufferUpdate()
         }
+        // 9 设置 X509 证书跳过验证（防止自签名证书导致 TLS 握手终止）
+               client.pointee.GetX509CertFingerprintMismatchDecision = { client, subject, from, until, fp, fpLen in
+                   return 1 // TRUE: 信任所有证书
+               }
+
     }
 }
 
