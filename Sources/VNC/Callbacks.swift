@@ -22,32 +22,32 @@ extension VNC {
         rfbClientSetClientData(client, nil, selfPtr)
 
         // 1. 纯密码认证
-           client.pointee.GetPassword = { client in
-               guard let client, let data = rfbClientGetClientData(client, nil) else { return nil }
-               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-               return vnc.providePassword()
-           }
+        client.pointee.GetPassword = { client in
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return nil }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+            return vnc.providePassword()
+        }
 
-           // 2. VeNCrypt / 凭据认证
-           client.pointee.GetCredential = { client, credType in
-               guard let client, let data = rfbClientGetClientData(client, nil) else { return nil }
-               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-               return vnc.provideCredential(type: credType)
-           }
+        // 2. VeNCrypt / 凭据认证
+        client.pointee.GetCredential = { client, credType in
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return nil }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+            return vnc.provideCredential(type: credType)
+        }
 
-           // 3. 图像帧区域更新
-           client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
-               guard let client, let data = rfbClientGetClientData(client, nil) else { return }
-               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-               vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
-           }
+        // 3. 图像帧区域更新
+        client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+            vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
+        }
 
-           // 4. FinishedFrameBufferUpdate
-           client.pointee.FinishedFrameBufferUpdate = { client in
-               guard let client, let data = rfbClientGetClientData(client, nil) else { return }
-               let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-               vnc.handleFinishedFrameBufferUpdate()
-           }
+        // 4. FinishedFrameBufferUpdate
+        client.pointee.FinishedFrameBufferUpdate = { client in
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+            vnc.handleFinishedFrameBufferUpdate()
+        }
 
         // 5. 剪贴板文本回调 (UTF-8 编码)
         client.pointee.GotXCutTextUTF8 = { client, text, textlen in
@@ -79,10 +79,10 @@ extension VNC {
             vnc.handleFinishedFrameBufferUpdate()
         }
         // 9 设置 X509 证书跳过验证（防止自签名证书导致 TLS 握手终止）
-               client.pointee.GetX509CertFingerprintMismatchDecision = { client, subject, from, until, fp, fpLen in
-                   return 1 // TRUE: 信任所有证书
-               }
-
+        client.pointee.GetX509CertFingerprintMismatchDecision = { _, _, _, _, _, _ in
+            // 默认信任服务端自签名证书（生产环境可在此检查指纹）
+            1 // rfbBool true
+        }
     }
 }
 
@@ -161,10 +161,6 @@ public extension VNC {
         // 超过 1 秒则结算一次 FPS 并抛出回调
         if elapsedTime >= 1.0 {
             currentFPS = Double(frameCount) / elapsedTime
-
-            #if DEBUG
-                print(String(format: "当前 VNC 实时帧率 FPS: %.1f", currentFPS))
-            #endif
 
             // 重置计数器与时间戳
             frameCount = 0
