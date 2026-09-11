@@ -72,13 +72,19 @@ public extension VNC {
         // 创建可读事件源并绑定回调
         socketShell = DispatchSource.makeReadSource(fileDescriptor: fd, queue: queueSocket)
         socketShell?.setEventHandler { [self] in
-            guard processEvents() else {
-                disconnect()
+            if !processEvents() {
+                socketShell?.cancel()
                 return
             }
         }
-        socketShell?.setCancelHandler {
-            self.socketShell = nil
+        socketShell?.setCancelHandler { [weak self] in
+            guard let self else { return }
+            socketShell = nil
+
+            // 切回主线程或相关 Queue 触发最终的断开通知/清理
+            DispatchQueue.main.async {
+                self.disconnect()
+            }
         }
         // 启动事件监听
         socketShell?.resume()
