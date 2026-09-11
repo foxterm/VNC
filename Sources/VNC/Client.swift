@@ -29,6 +29,8 @@ public extension VNC {
     /// - Returns: 是否完成握手并成功保持连接状态
     func handshake() async -> Bool {
         await io.call { [self] in
+//            SetBlocking(fd)
+//            etos_socket_set_blocking(fd, true)
             #if DEBUG
                 rfbEnableClientLogging = 1 // 调试模式下开启 C 库内部日志输出
             #else
@@ -43,35 +45,37 @@ public extension VNC {
             client.pointee.appData.compressLevel = compressLevel
             client.pointee.appData.qualityLevel = qualityLevel
             client.pointee.appData.enableJPEG = enableJPEG ? 1 : 0
-            // client.pointee.appData.useRemoteCursor = 1 // 远程光标渲染控制
-            client.pointee.appData.shareDesktop = 1 // 开启多端共享桌面
+            client.pointee.canHandleNewFBSize = 1
+            client.pointee.appData.useRemoteCursor = 0 // 远程光标渲染控制
+//            client.pointee.appData.shareDesktop = 1 // 开启多端共享桌面
             client.pointee.appData.palmVNC = 1 // 兼容 PalmVNC 扩展协议
-            client.pointee.sock = fd // 绑定已经建立好的 TCP Socket
-            
-            client.pointee.appData.useRemoteCursor = 0
-
-            client.pointee.connectTimeout = timeout.uint32
 
             // 设置像素格式与各种事件回调
             setupPreferredPixelFormat(client: client)
             setupCallbacks(client: client)
-            
 
-            // 初始化 RFB 连接握手协议
-            guard InitialiseRFBConnection(client) != 0 else {
+            client.pointee.connectTimeout = timeout.uint32
+            client.pointee.serverHost = host.bytes
+            client.pointee.serverPort = port.int32
+
+            guard rfbInitClient(client, nil, nil) != 0 else {
                 rfbClientCleanup(client)
                 return false
             }
-            
-            guard SetFormatAndEncodings(client) != 0 else {
-                rfbClientCleanup(client)
-                return false
-            }
-            // 发送首个全屏画面刷新请求
+            fd = client.pointee.sock
+
+//            guard InitialiseRFBConnection(client) != 0 else {
+//                rfbClientCleanup(client)
+//                return false
+//            }
+//            guard SetFormatAndEncodings(client) != 0 else {
+//                rfbClientCleanup(client)
+//                return false
+//            }
+
             SendFramebufferUpdateRequest(client, 0, 0, client.pointee.width, client.pointee.height, 0)
-
             rawClient = client
-            pollShell() // 开启 GCD 事件源轮询监听
+            pollShell()
             return isConnected
         }
     }
@@ -137,7 +141,6 @@ public extension VNC {
         client.pointee.format = format
     }
 
-
     /// 处理 VNC 消息驱动循环事件
     /// - Returns: 处理正常返回 true，出现网络异常或链接断开返回 false
     internal func processEvents() -> Bool {
@@ -154,7 +157,7 @@ public extension VNC {
                 return false
             }
         }
-        SendFramebufferUpdateRequest(rawClient, 0, 0, rawClient.pointee.width, rawClient.pointee.height, 1)
+        // SendFramebufferUpdateRequest(rawClient, 0, 0, rawClient.pointee.width, rawClient.pointee.height, 1)
 
         return true
     }
