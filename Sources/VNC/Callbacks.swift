@@ -36,11 +36,11 @@ extension VNC {
         }
 
         // 3. 图像帧区域更新
-//        client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
-//            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
-//            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
-//           //vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
-//        }
+        client.pointee.GotFrameBufferUpdate = { client, x, y, w, h in
+            guard let client, let data = rfbClientGetClientData(client, nil) else { return }
+            let vnc = Unmanaged<VNC>.fromOpaque(data).takeUnretainedValue()
+            vnc.handleFrameBufferUpdate(x: x.int, y: y.int, width: w.int, height: h.int)
+        }
 
         // 4. FinishedFrameBufferUpdate
         client.pointee.FinishedFrameBufferUpdate = { client in
