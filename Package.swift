@@ -31,7 +31,7 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedLibrary("z"),
-                .linkedLibrary("sasl2"),
+                .linkedLibrary("sasl2", .when(platforms: [.macOS])),
             ]
         ),
         .binaryTarget(
