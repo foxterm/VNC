@@ -48,13 +48,11 @@ public extension VNC {
             client.pointee.appData.useRemoteCursor = 0 // 远程光标渲染控制
             client.pointee.appData.shareDesktop = 1 // 开启多端共享桌面
             client.pointee.appData.palmVNC = 1 // 兼容 PalmVNC 扩展协议
+            client.pointee.readTimeout = timeout.uint32
 
             // 设置像素格式与各种事件回调
             setupPreferredPixelFormat(client: client)
             setupCallbacks(client: client)
-            client.pointee.readTimeout = timeout.uint32
-//            client.pointee.serverHost = host.bytes
-//            client.pointee.serverPort = port.int32
 
             client.pointee.sock = fd
 
@@ -62,17 +60,6 @@ public extension VNC {
                 rfbClientCleanup(client)
                 return false
             }
-            // fd = client.pointee.sock
-
-//            guard InitialiseRFBConnection(client) != 0 else {
-//                rfbClientCleanup(client)
-//                return false
-//            }
-//            guard SetFormatAndEncodings(client) != 0 else {
-//                rfbClientCleanup(client)
-//                return false
-//            }
-
             SendFramebufferUpdateRequest(client, 0, 0, client.pointee.width, client.pointee.height, 0)
             rawClient = client
             pollShell()
