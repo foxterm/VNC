@@ -213,7 +213,7 @@ compile_libvnc_single_arch() {
         -DLZO_LIBRARY="${deps}/lib/liblzo2.a" \
         -DWITH_JPEG=ON \
         -DJPEG_INCLUDE_DIR="${deps}/include" \
-        -DJPEG_LIBRARY="${deps}/lib/libturbojpeg.a" \
+        -DJPEG_LIBRARY="${deps}/lib/libjpeg.a" \
         -DWITH_PNG=ON \
         -DPNG_PNG_INCLUDE_DIR="${deps}/include" \
         -DPNG_INCLUDE_DIR="${deps}/include" \
@@ -241,7 +241,7 @@ compile_libvnc_single_arch() {
 
     libtool -static -o "${target_out}/libvncclient.a" \
         "${bdir}/libvncclient.a" \
-        "${deps}/lib/libturbojpeg.a" \
+        "${deps}/lib/libjpeg.a" \
         "${deps}/lib/libpng.a" \
         "${deps}/lib/liblzo2.a"
 }
