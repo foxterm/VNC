@@ -8,6 +8,7 @@ export GIT_ADVICE_DETACHED_HEAD=false
 OPENSSL_VERSION="openssl-3.6.3"
 MACOS_TARGET="14.0"
 IOS_TARGET="16.0"
+LZO_VERSION="2.10"
 
 WORK_DIR="$(pwd)/xcframework_build"
 SOURCE_DIR="${WORK_DIR}/sources"
@@ -35,8 +36,7 @@ fi
 # ================= 1. 源码下载 (全部采用 Git Clone) =================
 echo "==> [1/4] 克隆依赖库与主项目源码..."
 
-rm -rf "${SOURCE_DIR}/libvncserver"
-
+#rm -rf "${SOURCE_DIR}/libvncserver"
 if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
    git clone https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
      # git clone --depth 1 --branch "LibVNCServer-0.9.15" https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
@@ -57,6 +57,12 @@ fi
 
 if [ ! -d "${SOURCE_DIR}/png" ]; then
     git clone https://github.com/pnggroup/libpng.git "${SOURCE_DIR}/png"
+fi
+
+if [ ! -d "${SOURCE_DIR}/lzo" ]; then
+    echo "正在下载 LZO (${LZO_VERSION})..."
+    mkdir -p "${SOURCE_DIR}/lzo"
+    curl -L "https://www.oberhumer.com/opensource/lzo/download/lzo-${LZO_VERSION}.tar.gz" | tar -xz -C "${SOURCE_DIR}/lzo" --strip-components=1
 fi
 
 
@@ -116,7 +122,23 @@ compile_deps_single_arch() {
         cmake --build "${bdir}" --target install
     fi
 
-    # 4. OpenSSL
+    # 4. LZO
+    if [ ! -f "${install_prefix}/lib/liblzo2.a" ]; then
+        local bdir="${BUILD_DIR}/deps_build/${target_id}/lzo"
+        cmake -B "${bdir}" -S "${SOURCE_DIR}/lzo" -G Ninja \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
+            -DCMAKE_OSX_SYSROOT="${sysroot}" \
+            -DCMAKE_OSX_ARCHITECTURES="${arch}" \
+            -DCMAKE_C_FLAGS="${min_flag}" \
+            -DENABLE_SHARED=OFF \
+            -DENABLE_STATIC=ON
+        cmake --build "${bdir}" --target install
+    fi
+
+
+    # 5. OpenSSL
     if [ ! -f "${install_prefix}/lib/libssl.a" ]; then
         local sdk_path=$(xcrun --sdk ${sysroot} --show-sdk-path)
         local src_copy="${BUILD_DIR}/deps_build/${target_id}/openssl_src"
@@ -188,7 +210,9 @@ compile_libvnc_single_arch() {
         -DWITH_ZLIB=ON \
         -DZLIB_INCLUDE_DIR="${deps}/include" \
         -DZLIB_LIBRARY="${deps}/lib/libz.a" \
-        -DWITH_LZO=OFF \
+        -DWITH_LZO=ON \
+        -DLZO_INCLUDE_DIR="${deps}/include" \
+        -DLZO_LIBRARY="${deps}/lib/liblzo2.a" \
         -DWITH_JPEG=ON \
         -DJPEG_INCLUDE_DIR="${deps}/include" \
         -DJPEG_LIBRARY="${deps}/lib/libjpeg.a" \
@@ -220,7 +244,8 @@ compile_libvnc_single_arch() {
     libtool -static -o "${target_out}/libvncclient.a" \
         "${bdir}/libvncclient.a" \
         "${deps}/lib/libjpeg.a" \
-        "${deps}/lib/libpng.a"
+        "${deps}/lib/libpng.a" \
+        "${deps}/lib/liblzo2.a"
 }
 
 
