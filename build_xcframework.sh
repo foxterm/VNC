@@ -42,9 +42,9 @@ if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
      # git clone --depth 1 --branch "LibVNCServer-0.9.15" https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
 fi
 
-if [ ! -d "${SOURCE_DIR}/zlib" ]; then
-    git clone https://github.com/madler/zlib.git "${SOURCE_DIR}/zlib"
-fi
+# if [ ! -d "${SOURCE_DIR}/zlib" ]; then
+#     git clone https://github.com/madler/zlib.git "${SOURCE_DIR}/zlib"
+# fi
 
 if [ ! -d "${SOURCE_DIR}/openssl" ]; then
     echo "正在克隆 OpenSSL (${OPENSSL_VERSION})..."
@@ -79,18 +79,18 @@ compile_deps_single_arch() {
 
     echo "---> 编译依赖库 [${target_id}]..."
 
-    # 1. Zlib
-    if [ ! -f "${install_prefix}/lib/libz.a" ]; then
-        local bdir="${BUILD_DIR}/deps_build/${target_id}/zlib"
-        cmake -B "${bdir}" -S "${SOURCE_DIR}/zlib" -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
-            -DCMAKE_OSX_SYSROOT="${sysroot}" \
-            -DCMAKE_OSX_ARCHITECTURES="${arch}" \
-            -DCMAKE_C_FLAGS="${min_flag}" \
-            -DBUILD_SHARED_LIBS=OFF
-        cmake --build "${bdir}" --target install
-    fi
+    # 1. Zlib (系统自带)
+    # if [ ! -f "${install_prefix}/lib/libz.a" ]; then
+    #     local bdir="${BUILD_DIR}/deps_build/${target_id}/zlib"
+    #     cmake -B "${bdir}" -S "${SOURCE_DIR}/zlib" -G Ninja \
+    #         -DCMAKE_BUILD_TYPE=Release \
+    #         -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
+    #         -DCMAKE_OSX_SYSROOT="${sysroot}" \
+    #         -DCMAKE_OSX_ARCHITECTURES="${arch}" \
+    #         -DCMAKE_C_FLAGS="${min_flag}" \
+    #         -DBUILD_SHARED_LIBS=OFF
+    #     cmake --build "${bdir}" --target install
+    # fi
 
     # 2. Libjpeg-turbo
     if [ ! -f "${install_prefix}/lib/libjpeg.a" ]; then
@@ -208,8 +208,6 @@ compile_libvnc_single_arch() {
         -DWITH_LIBVNCSERVER=OFF \
         -DWITH_LIBVNCCLIENT=ON \
         -DWITH_ZLIB=ON \
-        -DZLIB_INCLUDE_DIR="${deps}/include" \
-        -DZLIB_LIBRARY="${deps}/lib/libz.a" \
         -DWITH_LZO=ON \
         -DLZO_INCLUDE_DIR="${deps}/include" \
         -DLZO_LIBRARY="${deps}/lib/liblzo2.a" \
