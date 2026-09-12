@@ -79,7 +79,7 @@ compile_deps_single_arch() {
 
     echo "---> 编译依赖库 [${target_id}]..."
 
-    # 1. Zlib (系统自带)
+    # 1. Zlib
     # if [ ! -f "${install_prefix}/lib/libz.a" ]; then
     #     local bdir="${BUILD_DIR}/deps_build/${target_id}/zlib"
     #     cmake -B "${bdir}" -S "${SOURCE_DIR}/zlib" -G Ninja \
