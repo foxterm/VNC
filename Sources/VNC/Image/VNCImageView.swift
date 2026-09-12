@@ -118,15 +118,6 @@ public class VNCEventHandlingView: PlatformView {
         return layer
     }()
 
-    #if os(macOS)
-        private static let macModifierMap: [UInt16: Int32] = [
-            55: 0xFFEB, 54: 0xFFEC,
-            59: 0xFFE3, 62: 0xFFE4,
-            58: 0xFFE9, 61: 0xFFEA,
-            56: 0xFFE1, 60: 0xFFE2,
-        ]
-    #endif
-
     override init(frame: CGRect) {
         super.init(frame: frame)
         setup()
