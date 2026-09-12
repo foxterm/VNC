@@ -57,7 +57,9 @@ public extension VNC {
         guard etos_socket_get_traffic_stats(fd, &stats) == 0 else {
             return (0, 0)
         }
-        return (etos_stats_get_tx(&stats), etos_stats_get_rx(&stats))
+        let tx = etos_stats_get_tx(&stats)
+        let rx = etos_stats_get_rx(&stats)
+        return (tx, rx)
     }
 
     /// 启动 Socket 事件轮询监听
