@@ -51,6 +51,8 @@ public extension VNC {
         etos_socket_strerror(socketLastError).string
     }
 
+    /// 当前 Socket 的网络流量统计
+    /// - Returns: 元组 (send: 已发送字节数, recv: 已接收字节数)
     var trafficStats: (send: UInt64, recv: UInt64) {
         guard fd >= 0 else { return (0, 0) }
         var stats = FdTrafficStats()
