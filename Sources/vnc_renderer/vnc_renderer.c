@@ -24,12 +24,9 @@ static void init_rgb332_lut(void) {
   }
 }
 
-static void releaseBufferCallback(void *info, const void *data, size_t size) {
-  free((void *)data);
-}
+static void releaseBufferCallback(void *info, const void *data, size_t size) { free((void *)data); }
 
-CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width,
-                                      int height, int bitsPerPixel) {
+CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width, int height, int bitsPerPixel) {
   if (!frameBuffer || width <= 0 || height <= 0)
     return NULL;
 
@@ -41,18 +38,15 @@ CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width,
   if (bitsPerPixel == 32) {
     memcpy(finalBuffer, frameBuffer, finalSize);
   } else if (bitsPerPixel == 16) {
-    vImage_Buffer srcBuf = {(void *)frameBuffer, (vImagePixelCount)height,
-                            (vImagePixelCount)width, width * 2};
-    vImage_Buffer destBuf = {finalBuffer, (vImagePixelCount)height,
-                             (vImagePixelCount)width, width * 4};
+    vImage_Buffer srcBuf = {(void *)frameBuffer, (vImagePixelCount)height, (vImagePixelCount)width, width * 2};
+    vImage_Buffer destBuf = {finalBuffer, (vImagePixelCount)height, (vImagePixelCount)width, width * 4};
 
     // 1. RGB565 -> ARGB8888
     vImageConvert_RGB565toARGB8888(255, &srcBuf, &destBuf, kvImageNoFlags);
 
     // 2. 16 位转换出来的 ARGB 需要重排为小端序 BGRA
     const uint8_t permuteMap[4] = {3, 2, 1, 0};
-    vImagePermuteChannels_ARGB8888(&destBuf, &destBuf, permuteMap,
-                                   kvImageNoFlags);
+    vImagePermuteChannels_ARGB8888(&destBuf, &destBuf, permuteMap, kvImageNoFlags);
   } else if (bitsPerPixel == 8) {
     pthread_once(&g_lut_once, init_rgb332_lut);
     const uint8_t *src = (const uint8_t *)frameBuffer;
@@ -67,20 +61,16 @@ CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width,
     return NULL;
   }
 
-  CGDataProviderRef provider = CGDataProviderCreateWithData(
-      NULL, finalBuffer, finalSize, releaseBufferCallback);
+  CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, finalBuffer, finalSize, releaseBufferCallback);
   if (!provider) {
     free(finalBuffer);
     return NULL;
   }
 
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-  CGBitmapInfo bitmapInfo =
-      kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst;
+  CGBitmapInfo bitmapInfo = kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst;
 
-  CGImageRef image =
-      CGImageCreate(width, height, 8, 32, width * 4, colorSpace, bitmapInfo,
-                    provider, NULL, false, kCGRenderingIntentDefault);
+  CGImageRef image = CGImageCreate(width, height, 8, 32, width * 4, colorSpace, bitmapInfo, provider, NULL, false, kCGRenderingIntentDefault);
 
   CGColorSpaceRelease(colorSpace);
   CGDataProviderRelease(provider);
