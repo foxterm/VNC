@@ -17,11 +17,11 @@ extension VNC {
             return
         }
 
-        let width = client.pointee.width.int
-        let height = client.pointee.height.int
-        let bitsPerPixel = client.pointee.format.bitsPerPixel.int
+        let width = client.pointee.width.int32
+        let height = client.pointee.height.int32
+        let bitsPerPixel = client.pointee.format.bitsPerPixel.int32
 
-        let cgImage = VNCCreateCGImageFromBuffer(frameBuffer, width.int32, height.int32, bitsPerPixel.int32)
+        let cgImage = VNCCreateCGImageFromBuffer(frameBuffer, width, height, bitsPerPixel)
 
         if let cgImage {
             vncDelegate?.buffer(vnc: self, image: cgImage)
