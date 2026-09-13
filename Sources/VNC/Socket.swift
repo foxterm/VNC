@@ -51,7 +51,7 @@ public extension VNC {
         etos_socket_strerror(socketLastError).string
     }
 
-    /// 获取当前连接的远程IP
+    /// 获取当前连接的远程地址
     var remoteAddr: (host: String, port: Int)? {
         var ipBuffer = [CChar](repeating: 0, count: 64)
         var port: Int32 = 0
@@ -62,7 +62,7 @@ public extension VNC {
         return (host, port.int)
     }
 
-    /// 获取当前连接的本地地址（IP:Port）
+    /// 获取当前连接的本地地址
     var localAddr: (host: String, port: Int)? {
         var ipBuffer = [CChar](repeating: 0, count: 64)
         var port: Int32 = 0
