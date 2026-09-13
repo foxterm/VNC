@@ -51,6 +51,28 @@ public extension VNC {
         etos_socket_strerror(socketLastError).string
     }
 
+    /// 获取当前连接的远程IP
+    var remoteAddr: (host: String, port: Int)? {
+        var ipBuffer = [CChar](repeating: 0, count: 64)
+        var port: Int32 = 0
+        guard etos_socket_get_peer_info(fd, &ipBuffer, ipBuffer.count, &port) == 0 else {
+            return nil
+        }
+        let host = ipBuffer.string
+        return (host, port.int)
+    }
+
+    /// 获取当前连接的本地地址（IP:Port）
+    var localAddr: (host: String, port: Int)? {
+        var ipBuffer = [CChar](repeating: 0, count: 64)
+        var port: Int32 = 0
+        guard etos_socket_get_local_info(fd, &ipBuffer, ipBuffer.count, &port) == 0 else {
+            return nil
+        }
+        let host = ipBuffer.string
+        return (host, port.int)
+    }
+
     /// 当前 Socket 的网络流量统计
     /// - Returns: 元组 (send: 已发送字节数, recv: 已接收字节数, rtt: 实时往返时间（微秒))
     var trafficStats: (send: UInt64, recv: UInt64, rtt: UInt32) {
