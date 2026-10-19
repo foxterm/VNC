@@ -3,7 +3,9 @@
 // Created by foxterm@foxmail.com
 
 import Foundation
-
+#if !COCOAPODS
+import vnc_renderer
+#endif
 extension VNC {
     /// 从帧缓冲区提取当前画面并生成 CGImage，通过代理通知上层渲染
     ///

@@ -1,0 +1,4 @@
+module libvncclient {
+    umbrella header  "rfb.h"
+    export *
+}
