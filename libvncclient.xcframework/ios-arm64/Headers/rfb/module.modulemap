@@ -1,0 +1,9 @@
+module libvncclient {
+    umbrella header  "rfbconfig.h"
+    umbrella header  "keysym.h"
+    umbrella header  "threading.h"
+    umbrella header  "rfbproto.h"
+    umbrella header  "rfbregion.h"
+    umbrella header  "rfbclient.h"
+    export *
+}

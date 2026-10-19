@@ -1,4 +1,0 @@
-module libvncclient {
-    umbrella header "libvncclient.h"
-    export *
-}
