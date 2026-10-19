@@ -1,122 +1,124 @@
 # VNC
 
-FoxTerm APP 专用 VNC 客户端库，基于 libvncclient 的 Swift 封装，支持远程桌面连接、帧渲染、键鼠输入及剪贴板同步。
+[English](README.md) | [中文文档](README_CN.md)
 
-> 本库为 [FoxTerm](https://foxterm.app/) APP 专用核心组件，欢迎下载使用：[https://foxterm.app/](https://foxterm.app/)
+A dedicated VNC client library for the FoxTerm APP. Built as a Swift wrapper around libvncclient, it supports remote desktop connections, frame rendering, keyboard/mouse input, and clipboard synchronization.
 
-## 功能
+> This library is a dedicated core component for the [FoxTerm](https://foxterm.app/) APP. Download it here: [https://foxterm.app/](https://foxterm.app/)
 
-- **VNC 协议** — 完整的 RFB 客户端实现，基于 libvncclient
-- **多种认证** — VNC 密码认证、VeNCrypt、X509 证书、用户名/密码凭据
-- **帧渲染** — 帧缓冲区 → CGImage 实时转换，支持 32/16/8 位色深
-- **键鼠输入** — 完整的鼠标事件（移动/点击/滚轮）和键盘事件（macOS keyCode → X11 keysym 映射）
-- **跨平台视图** — `VNCImageView` 封装（macOS NSViewRepresentable / iOS UIViewRepresentable）
-- **iOS 触摸手势** — 单击、双击、长按（右键）、拖动、双指滚动，支持直接触摸和触控板两种模式
-- **剪贴板同步** — 远端剪贴板接收（UTF-8）与本地剪贴板发送
-- **端口转发** — 支持 SOCKS5 / HTTP 代理连接
-- **JPEG 压缩** — 可配置 JPEG 质量和数据压缩级别
-- **桌面尺寸变化** — 动态检测远端分辨率变更
-- **实时 FPS** — 帧率统计与回调
-- **蜂鸣提示** — 远端 Bell 事件触发本地声音/触觉反馈
+## Features
 
-## 环境要求
+- **VNC Protocol** — Full RFB client implementation based on libvncclient
+- **Multiple Authentication** — VNC password authentication, VeNCrypt, X509 certificates, username/password credentials
+- **Frame Rendering** — Frame buffer to CGImage real-time conversion, supporting 32/16/8-bit color depth
+- **Keyboard & Mouse Input** — Full mouse events (move/click/scroll wheel) and keyboard events (macOS keyCode to X11 keysym mapping)
+- **Cross-Platform View** — `VNCImageView` wrapper (macOS NSViewRepresentable / iOS UIViewRepresentable)
+- **iOS Touch Gestures** — Single tap, double tap, long press (right-click), drag, two-finger scroll, supporting both direct touch and trackpad modes
+- **Clipboard Sync** — Remote clipboard reception (UTF-8) and local clipboard sending
+- **Port Forwarding** — SOCKS5 / HTTP proxy connection support
+- **JPEG Compression** — Configurable JPEG quality and data compression levels
+- **Desktop Size Changes** — Dynamic detection of remote resolution changes
+- **Real-Time FPS** — Frame rate statistics and callbacks
+- **Bell Notification** — Remote Bell events trigger local sound/haptic feedback
 
-| 平台 | 最低版本 |
-|------|---------|
-| iOS  | 17.0    |
-| macOS | 14.0   |
-| Swift | 5.10   |
+## Requirements
 
-## 安装
+| Platform | Minimum Version |
+|----------|----------------|
+| iOS      | 17.0           |
+| macOS    | 14.0           |
+| Swift    | 5.10           |
+
+## Installation
 
 ```ruby
 pod 'VNC', :git => 'https://github.com/foxterm/VNC.git'
 ```
 
-### 依赖
+### Dependencies
 
-- [libetos](https://github.com/foxterm/libetos) — 底层 Socket
-- [Sync](https://github.com/foxterm/Sync) — 并发同步原语
-- [Proxy](https://github.com/foxterm/Proxy) — 网络代理
-- [Extension](https://github.com/foxterm/Extension) — Foundation 扩展
+- [libetos](https://github.com/foxterm/libetos) — Low-level socket
+- [Sync](https://github.com/foxterm/Sync) — Concurrency synchronization primitives
+- [Proxy](https://github.com/foxterm/Proxy) — Network proxy
+- [Extension](https://github.com/foxterm/Extension) — Foundation extensions
 - OpenSSL-Universal
-- libvncclient.xcframework（内置）
+- libvncclient.xcframework (built-in)
 
-## 使用
+## Usage
 
-### 建立连接
+### Establishing a Connection
 
 ```swift
 let vnc = VNC(host: "192.168.1.100", port: 5900, password: "password")
 
-// 注册代理
+// Register delegate
 vnc.vncDelegate = self
 
-// 1. TCP Socket 连接
+// 1. TCP Socket connection
 guard await vnc.connect() else { return }
 
-// 或通过代理连接
+// Or connect via proxy
 // guard await vnc.connect(proxy: proxyConfig) else { return }
 
-// 2. VNC 握手
+// 2. VNC handshake
 guard await vnc.handshake() else { return }
 ```
 
-### 配置选项
+### Configuration Options
 
 ```swift
-vnc.preferredColorDepth = .bit32    // 色深：.bit32 / .bit16 / .bit8
-vnc.enableJPEG = true               // JPEG 压缩
-vnc.qualityLevel = 9                // JPEG 质量 (1-9)
-vnc.compressLevel = 6               // 数据压缩 (1-9)
-vnc.isCursor = true                 // 显示远程光标
+vnc.preferredColorDepth = .bit32    // Color depth: .bit32 / .bit16 / .bit8
+vnc.enableJPEG = true               // JPEG compression
+vnc.qualityLevel = 9                // JPEG quality (1-9)
+vnc.compressLevel = 6               // Data compression (1-9)
+vnc.isCursor = true                 // Show remote cursor
 ```
 
-### X509 TLS 认证
+### X509 TLS Authentication
 
 ```swift
 vnc.caCertPath = "/path/to/ca.pem"
-vnc.caCrlPath = "/path/to/ca-crl.pem"      // 可选
-vnc.clientCertPath = "/path/to/client.pem"  // 可选
-vnc.clientKeyPath = "/path/to/client.key"   // 可选
+vnc.caCrlPath = "/path/to/ca-crl.pem"      // Optional
+vnc.clientCertPath = "/path/to/client.pem"  // Optional
+vnc.clientKeyPath = "/path/to/client.key"   // Optional
 ```
 
-### 键鼠输入
+### Keyboard & Mouse Input
 
 ```swift
-// 鼠标移动 + 点击
-vnc.sendPointerEvent(x: 100, y: 200, buttonMask: 1)  // 左键按下
-vnc.sendPointerEvent(x: 100, y: 200, buttonMask: 0)  // 释放
+// Mouse move + click
+vnc.sendPointerEvent(x: 100, y: 200, buttonMask: 1)  // Left button pressed
+vnc.sendPointerEvent(x: 100, y: 200, buttonMask: 0)  // Released
 
-// 鼠标按键
-vnc.sendMouseButtonEvent(x: 100, y: 200, button: 1, pressed: true)  // 左键
-vnc.sendMouseButtonEvent(x: 100, y: 200, button: 3, pressed: true)  // 右键
+// Mouse button
+vnc.sendMouseButtonEvent(x: 100, y: 200, button: 1, pressed: true)  // Left button
+vnc.sendMouseButtonEvent(x: 100, y: 200, button: 3, pressed: true)  // Right button
 
-// 滚轮
+// Scroll wheel
 vnc.sendMouseWheelEvent(x: 100, y: 200, wheelDelta: 3)
 
-// 键盘
+// Keyboard
 vnc.sendKeyEvent(keysym: XK_a, down: true)
 vnc.sendKeyEvent(keysym: XK_a, down: false)
 
-// 字符输入
+// Character input
 vnc.sendCharacterEvent(character: "A", pressed: true)
 
-// macOS keyCode → X11 keysym
+// macOS keyCode to X11 keysym
 let keysym = VNC.convertKeysym(keyCode: event.keyCode, useUppercase: false)
 ```
 
-### 剪贴板
+### Clipboard
 
 ```swift
-// 发送本地文本到远端剪贴板
-vnc.sendToRemoteClipboard("复制的文本")
+// Send local text to remote clipboard
+vnc.sendToRemoteClipboard("Copied text")
 
-// 接收远端剪贴板（通过 cutText 属性）
+// Receive remote clipboard (via cutText property)
 let remoteText = vnc.cutText
 ```
 
-### SwiftUI 视图
+### SwiftUI View
 
 ```swift
 struct RemoteDesktopView: View {
@@ -137,52 +139,52 @@ struct RemoteDesktopView: View {
 }
 ```
 
-### 代理回调
+### Delegate Callbacks
 
 ```swift
 extension ViewController: VNCDelegate {
     func disconnect() {
-        // 连接断开
+        // Connection disconnected
     }
 
     func buffer(vnc: VNC, image: CGImage?) {
-        // 收到新帧，更新 UI
+        // New frame received, update UI
         cgImage = image
     }
 
     func handleDesktopSizeChange(width: Int, height: Int) {
-        // 远端分辨率变化
+        // Remote resolution changed
     }
 
     func handleFPSChange(eps: Double) {
-        // 帧率更新
+        // Frame rate updated
     }
 }
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 src/
 ├── VNC/
-│   ├── VNC.swift           # 核心客户端类
-│   ├── Client.swift        # 握手、事件循环、断开
-│   ├── Socket.swift        # TCP 连接、代理、事件轮询
-│   ├── Auth.swift          # 认证（密码、凭据、X509）
-│   ├── Callbacks.swift     # libvncclient C 回调注册与事件响应
-│   ├── FrameBuffer.swift   # 帧缓冲区 → CGImage 提取
-│   ├── KeyEvent.swift      # 键鼠输入、keyCode 映射
-│   ├── Protocol.swift      # VNCDelegate 协议
-│   ├── Type.swift          # ColorDepth 枚举
+│   ├── VNC.swift           # Core client class
+│   ├── Client.swift        # Handshake, event loop, disconnect
+│   ├── Socket.swift        # TCP connection, proxy, event polling
+│   ├── Auth.swift          # Authentication (password, credentials, X509)
+│   ├── Callbacks.swift     # libvncclient C callback registration & event handling
+│   ├── FrameBuffer.swift   # Frame buffer to CGImage extraction
+│   ├── KeyEvent.swift      # Keyboard/mouse input, keyCode mapping
+│   ├── Protocol.swift      # VNCDelegate protocol
+│   ├── Type.swift          # ColorDepth enum
 │   └── Image/
-│       ├── VNCImageView.swift  # 跨平台渲染视图 + 事件处理
-│       └── Environment.swift   # SwiftUI Environment 注入
+│       ├── VNCImageView.swift  # Cross-platform rendering view + event handling
+│       └── Environment.swift   # SwiftUI Environment injection
 └── vnc_renderer/
-    ├── vnc_renderer.c          # C 层像素格式转换
+    ├── vnc_renderer.c          # C-level pixel format conversion
     └── include/vnc_renderer.h
-libvncclient.xcframework/       # 预编译 libvncclient（iOS + macOS）
+libvncclient.xcframework/       # Precompiled libvncclient (iOS + macOS)
 ```
 
-## 许可证
+## License
 
 MIT
