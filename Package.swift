@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v14),
     ],
     products: [
-        .library(name: "VNC", targets: ["VNC"]),
+        .library(name: "VNC", targets: ["VNC"])
     ],
     dependencies: [
         .package(url: "https://github.com/foxterm/libetos.git", branch: "main"),
@@ -42,6 +42,7 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedLibrary("z"),
+                .linkedLibrary("sasl2", .when(platforms: [.macOS])),
                 .linkedFramework("Security"),
                 .linkedFramework("CoreFoundation"),
             ]
