@@ -31,6 +31,18 @@ A dedicated VNC client library for the FoxTerm APP. Built as a Swift wrapper aro
 
 ## Installation
 
+### Swift Package Manager
+
+```swift
+.package(url: "https://github.com/foxterm/VNC.git", branch: "main"),
+```
+
+```swift
+.product(name: "VNC", package: "VNC"),
+```
+
+### CocoaPods
+
 ```ruby
 pod 'VNC', :git => 'https://github.com/foxterm/VNC.git'
 ```
@@ -165,7 +177,7 @@ extension ViewController: VNCDelegate {
 ## Project Structure
 
 ```
-src/
+Sources/
 ├── VNC/
 │   ├── VNC.swift           # Core client class
 │   ├── Client.swift        # Handshake, event loop, disconnect

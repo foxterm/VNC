@@ -31,6 +31,18 @@ FoxTerm APP 专用 VNC 客户端库，基于 libvncclient 的 Swift 封装，支
 
 ## 安装
 
+### Swift Package Manager
+
+```swift
+.package(url: "https://github.com/foxterm/VNC.git", branch: "main"),
+```
+
+```swift
+.product(name: "VNC", package: "VNC"),
+```
+
+### CocoaPods
+
 ```ruby
 pod 'VNC', :git => 'https://github.com/foxterm/VNC.git'
 ```
@@ -165,7 +177,7 @@ extension ViewController: VNCDelegate {
 ## 项目结构
 
 ```
-src/
+Sources/
 ├── VNC/
 │   ├── VNC.swift           # 核心客户端类
 │   ├── Client.swift        # 握手、事件循环、断开
