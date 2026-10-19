@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '17.0'
   s.osx.deployment_target = '14.0'
   s.swift_version = '5.10'
-  s.source_files = ['src/**/*.{swift,h,c}']
+  s.source_files = ['Sources/**/*.{swift,h,c}']
   s.dependency 'libetos'
   s.dependency 'Sync'
   s.dependency 'Proxy'
