@@ -2,6 +2,8 @@
 
 FoxTerm APP 专用 VNC 客户端库，基于 libvncclient 的 Swift 封装，支持远程桌面连接、帧渲染、键鼠输入及剪贴板同步。
 
+> 本库为 [FoxTerm](https://foxterm.app/) APP 专用核心组件。如需使用完整功能，请下载 FoxTerm 客户端：[https://foxterm.app/](https://foxterm.app/)
+
 ## 功能
 
 - **VNC 协议** — 完整的 RFB 客户端实现，基于 libvncclient
