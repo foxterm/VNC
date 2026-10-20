@@ -32,13 +32,13 @@ let package = Package(
         .target(
             name: "VNC",
             dependencies: [
-                "libetos",
-                "Sync",
-                "Proxy",
-                "Extension",
+                .product(name: "libetos", package: "libetos"),
+                .product(name: "Sync", package: "Sync"),
+                .product(name: "Proxy", package: "Proxy"),
+                .product(name: "Extension", package: "Extension"),
+                .product(name: "OpenSSL", package: "OpenSSL"),
                 "libvncclient",
                 "vnc_renderer",
-                .product(name: "OpenSSL", package: "OpenSSL"),
             ],
             linkerSettings: [
                 .linkedLibrary("z"),
