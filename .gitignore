@@ -64,3 +64,6 @@ fastlane/test_output
 build/
 .DS_Store
 Package.resolved
+
+xcframework_build/
+xcframework/
