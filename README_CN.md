@@ -53,7 +53,7 @@ pod 'VNC', :git => 'https://github.com/foxterm/VNC.git'
 - [Sync](https://github.com/foxterm/Sync) — 并发同步原语
 - [Proxy](https://github.com/foxterm/Proxy) — 网络代理
 - [Extension](https://github.com/foxterm/Extension) — Foundation 扩展
-- OpenSSL-Universal
+- [OpenSSL-Universal](https://github.com/krzyzanowskim/OpenSSL) — OpenSSL 加密工具库
 - [LibVNC](https://github.com/LibVNC/libvncserver.git) — VNC 协议实现（上游，含 libvncclient）
 - libvncclient.xcframework（内置）
 
