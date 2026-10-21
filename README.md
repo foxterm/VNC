@@ -55,7 +55,6 @@ pod 'VNC', :git => 'https://github.com/foxterm/VNC.git'
 - [Extension](https://github.com/foxterm/Extension) — Foundation extensions
 - [OpenSSL-Universal](https://github.com/krzyzanowskim/OpenSSL) — OpenSSL cryptographic toolkit
 - [LibVNC](https://github.com/LibVNC/libvncserver.git) — VNC protocol implementation (upstream, includes libvncclient)
-- libvncclient.xcframework (built-in)
 
 ## Usage
 
