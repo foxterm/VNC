@@ -54,6 +54,7 @@ pod 'VNC', :git => 'https://github.com/foxterm/VNC.git'
 - [Proxy](https://github.com/foxterm/Proxy) — 网络代理
 - [Extension](https://github.com/foxterm/Extension) — Foundation 扩展
 - OpenSSL-Universal
+- [LibVNC](https://github.com/LibVNC/libvncserver.git) — VNC 协议实现（上游，含 libvncclient）
 - libvncclient.xcframework（内置）
 
 ## 使用
