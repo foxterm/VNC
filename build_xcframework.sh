@@ -5,7 +5,6 @@ set -e
 export GIT_ADVICE_DETACHED_HEAD=false
 
 # ================= 配置区 =================
-OPENSSL_VERSION="openssl-3.6.5"
 MACOS_TARGET="14.0"
 IOS_TARGET="17.0"
 LZO_VERSION="2.10"
@@ -15,6 +14,9 @@ SOURCE_DIR="${WORK_DIR}/sources"
 DEPS_DIR="${WORK_DIR}/deps"
 BUILD_DIR="${WORK_DIR}/build"
 OUTPUT_DIR="$(pwd)/xcframework"
+
+# OpenSSL 预编译产物路径
+OPENSSL_BUILD_DIR="$(cd "$(pwd)/../OpenSSL/openssl_xcframework_build" && pwd)"
 
 mkdir -p "${SOURCE_DIR}" "${DEPS_DIR}" "${BUILD_DIR}" "${OUTPUT_DIR}"
 
@@ -33,23 +35,24 @@ if ! command -v glibtoolize &> /dev/null && ! command -v libtoolize &> /dev/null
     exit 1
 fi
 
+# 检查 OpenSSL 预编译目录是否存在
+if [ ! -d "${OPENSSL_BUILD_DIR}" ]; then
+    echo "Error: 未找到 OpenSSL 预编译路径: ${OPENSSL_BUILD_DIR}，请先编译 OpenSSL！"
+    exit 1
+fi
+
 # ================= 1. 源码下载 (全部采用 Git Clone) =================
 echo "==> [1/4] 克隆依赖库与主项目源码..."
 
 #rm -rf "${SOURCE_DIR}/libvncserver"
 if [ ! -d "${SOURCE_DIR}/libvncserver" ]; then
-   git clone https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
+   git clone -b master https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
      # git clone --depth 1 --branch "LibVNCServer-0.9.15" https://github.com/LibVNC/libvncserver.git "${SOURCE_DIR}/libvncserver"
 fi
 
 # if [ ! -d "${SOURCE_DIR}/zlib" ]; then
 #     git clone https://github.com/madler/zlib.git "${SOURCE_DIR}/zlib"
 # fi
-
-if [ ! -d "${SOURCE_DIR}/openssl" ]; then
-    echo "正在克隆 OpenSSL (${OPENSSL_VERSION})..."
-    git clone --depth 1 --branch "${OPENSSL_VERSION}" https://github.com/openssl/openssl.git "${SOURCE_DIR}/openssl"
-fi
 
 if [ ! -d "${SOURCE_DIR}/jpeg" ]; then
     git clone https://github.com/libjpeg-turbo/libjpeg-turbo.git "${SOURCE_DIR}/jpeg"
@@ -138,29 +141,6 @@ compile_deps_single_arch() {
     fi
 
 
-    # 5. OpenSSL
-    if [ ! -f "${install_prefix}/lib/libssl.a" ]; then
-        local sdk_path=$(xcrun --sdk ${sysroot} --show-sdk-path)
-        local src_copy="${BUILD_DIR}/deps_build/${target_id}/openssl_src"
-        mkdir -p "${src_copy}"
-        cp -R "${SOURCE_DIR}/openssl/" "${src_copy}"
-
-        pushd "${src_copy}" > /dev/null
-        local os_compiler=""
-        case ${target_id} in
-            "macos-arm64")       os_compiler="darwin64-arm64-cc" ;;
-            "macos-x86_64")      os_compiler="darwin64-x86_64-cc" ;;
-            "ios-arm64")         os_compiler="ios64-cross" ;;
-            "ios-sim-arm64")     os_compiler="iossimulator-arm64-xcrun" ;;
-        esac
-
-        export CFLAGS="${min_flag} -isysroot ${sdk_path}"
-        ./Configure ${os_compiler} no-shared no-async no-tests --prefix="${install_prefix}"
-        make -j$(sysctl -n hw.ncpu) build_libs
-        make install_dev
-        popd > /dev/null
-    fi
-
 }
 
 echo "==> [2/4] 构建各架构依赖库..."
@@ -181,16 +161,15 @@ compile_libvnc_single_arch() {
     local bdir="${BUILD_DIR}/vnc_${target_id}"
     local target_out="${BUILD_DIR}/packaged_${target_id}"
 
+    # 映射外部 OpenSSL 对应的架构产物目录
+    local openssl_arch_dir="${OPENSSL_BUILD_DIR}/build/install_${target_id}"
+    if [ ! -d "${openssl_arch_dir}" ]; then
+        echo "Error: 找不到 OpenSSL 针对架构 [${target_id}] 的产物目录: ${openssl_arch_dir}"
+        exit 1
+    fi
+
     mkdir -p "${target_out}"
 
-    # 1. 动态判断平台：如果是 iOS 相关 target 则关闭 SASL，否则开启
-    local with_sasl="ON"
-    if [[ "${target_id}" == *"ios"* ]]; then
-        with_sasl="OFF"
-        echo "---> [iOS 检测] 自动针对 iOS 平台禁用 SASL (-DWITH_SASL=OFF)"
-    else
-        echo "---> [macOS 检测] 保持 macOS 开启 SASL (-DWITH_SASL=ON)"
-    fi
 
     echo "---> 编译 LibVNCClient [${target_id}]..."
 
@@ -219,10 +198,10 @@ compile_libvnc_single_arch() {
         -DPNG_INCLUDE_DIR="${deps}/include" \
         -DPNG_LIBRARY="${deps}/lib/libpng.a" \
         -DWITH_OPENSSL=ON \
-        -DOPENSSL_ROOT_DIR="${deps}" \
-        -DOPENSSL_INCLUDE_DIR="${deps}/include" \
-        -DOPENSSL_LIBRARIES="${deps}/lib/libssl.a;${deps}/lib/libcrypto.a" \
-        -DWITH_SASL="${with_sasl}" \
+        -DOPENSSL_ROOT_DIR="${openssl_arch_dir}" \
+        -DOPENSSL_INCLUDE_DIR="${openssl_arch_dir}/include" \
+        -DOPENSSL_LIBRARIES="${openssl_arch_dir}/lib/libssl.a;${openssl_arch_dir}/lib/libcrypto.a" \
+        -DWITH_SASL=OFF \
         -DWITH_TIGHTVNC_FILETRANSFER=ON \
         -DWITH_WEBSOCKETS=ON \
         -DWITH_24BPP=ON \
