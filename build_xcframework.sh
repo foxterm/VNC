@@ -7,7 +7,7 @@ export GIT_ADVICE_DETACHED_HEAD=false
 # ================= 配置区 =================
 OPENSSL_VERSION="openssl-3.6.5"
 MACOS_TARGET="14.0"
-IOS_TARGET="16.0"
+IOS_TARGET="17.0"
 LZO_VERSION="2.10"
 
 WORK_DIR="$(pwd)/xcframework_build"
