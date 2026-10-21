@@ -39,7 +39,7 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedLibrary("z"),
-                .linkedLibrary("sasl2", .when(platforms: [.macOS])),
+                /// .linkedLibrary("sasl2", .when(platforms: [.macOS])),
                 .linkedFramework("Security"),
                 .linkedFramework("CoreFoundation"),
             ]
