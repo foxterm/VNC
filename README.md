@@ -53,7 +53,7 @@ pod 'VNC', :git => 'https://github.com/foxterm/VNC.git'
 - [Sync](https://github.com/foxterm/Sync) — Concurrency synchronization primitives
 - [Proxy](https://github.com/foxterm/Proxy) — Network proxy
 - [Extension](https://github.com/foxterm/Extension) — Foundation extensions
-- [OpenSSL-Universal](https://github.com/krzyzanowskim/OpenSSL) — OpenSSL cryptographic toolkit
+- [OpenSSL](https://github.com/foxterm/OpenSSL) — OpenSSL cryptographic toolkit
 - [LibVNC](https://github.com/LibVNC/libvncserver.git) — VNC protocol implementation (upstream, includes libvncclient)
 
 ## Usage
