@@ -2,6 +2,7 @@
 // Copyright (c) 2025-2026 foxterm.app
 // Created by foxterm@foxmail.com
 
+import Extension
 import Foundation
 #if !COCOAPODS
     import vnc_renderer
