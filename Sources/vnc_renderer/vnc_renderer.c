@@ -43,7 +43,7 @@ CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width, int he
   if (!frameBuffer || width <= 0 || height <= 0)
     return NULL;
 
-  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+  CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
   CGImageRef image = NULL;
 
   // -------------------------------------------------------------
