@@ -7,20 +7,26 @@
 #include <arm_neon.h>
 #endif
 
+// 预计算 256 色 RGB332 -> Little Endian BGRA/BGRX (0xAA000000 布局)
 static uint32_t g_rgb332_lut[256];
 static pthread_once_t g_lut_once = PTHREAD_ONCE_INIT;
 
 static void init_rgb332_lut(void) {
   for (int i = 0; i < 256; i++) {
+    // 扩展 3-bit Red 到 8-bit
     uint8_t r = (i & 0xE0);
     r |= (r >> 3) | (r >> 6);
 
+    // 扩展 3-bit Green 到 8-bit
     uint8_t g = (i & 0x1C) << 3;
     g |= (g >> 3) | (g >> 6);
 
+    // 扩展 2-bit Blue 到 8-bit
     uint8_t b = (i & 0x03) << 6;
     b |= (b >> 2) | (b >> 4) | (b >> 6);
 
+    // 小端内存中的 kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst 布局:
+    // 字节 0: B, 字节 1: G, 字节 2: R, 字节 3: X/A
     uint8_t *bytes = (uint8_t *)&g_rgb332_lut[i];
     bytes[0] = b;
     bytes[1] = g;
@@ -33,113 +39,18 @@ static void releaseBufferCallback(void *info, const void *data, size_t size) {
   free((void *)data);
 }
 
-static inline uint32_t swap32(uint32_t v) {
-  return ((v >> 24) & 0xFF) | ((v >> 8) & 0xFF00) | ((v << 8) & 0xFF0000) | ((v << 24) & 0xFF000000);
-}
-
-static inline uint16_t swap16(uint16_t v) {
-  return (v >> 8) | (v << 8);
-}
-
-static void convert32to32(const uint32_t *src, uint32_t *dst, size_t totalPixels,
-                          const rfbPixelFormat *srcFmt, const rfbPixelFormat *dstFmt) {
-  uint32_t srcRedMax = srcFmt->redMax;
-  uint32_t srcGreenMax = srcFmt->greenMax;
-  uint32_t srcBlueMax = srcFmt->blueMax;
-  uint8_t srcRedShift = srcFmt->redShift;
-  uint8_t srcGreenShift = srcFmt->greenShift;
-  uint8_t srcBlueShift = srcFmt->blueShift;
-  int srcBigEndian = srcFmt->bigEndian;
-
-  uint32_t dstRedMax = dstFmt->redMax;
-  uint32_t dstGreenMax = dstFmt->greenMax;
-  uint32_t dstBlueMax = dstFmt->blueMax;
-  uint8_t dstRedShift = dstFmt->redShift;
-  uint8_t dstGreenShift = dstFmt->greenShift;
-  uint8_t dstBlueShift = dstFmt->blueShift;
-
-  for (size_t i = 0; i < totalPixels; i++) {
-    uint32_t pixel = src[i];
-    if (srcBigEndian) pixel = swap32(pixel);
-
-    uint32_t r = ((pixel >> srcRedShift) & srcRedMax);
-    uint32_t g = ((pixel >> srcGreenShift) & srcGreenMax);
-    uint32_t b = ((pixel >> srcBlueShift) & srcBlueMax);
-
-    if (srcRedMax != dstRedMax) r = r * dstRedMax / srcRedMax;
-    if (srcGreenMax != dstGreenMax) g = g * dstGreenMax / srcGreenMax;
-    if (srcBlueMax != dstBlueMax) b = b * dstBlueMax / srcBlueMax;
-
-    uint32_t outPixel = (r << dstRedShift) | (g << dstGreenShift) | (b << dstBlueShift);
-    if (dstFmt->bigEndian) outPixel = swap32(outPixel);
-
-    dst[i] = outPixel;
-  }
-}
-
-static void convert16to32(const uint16_t *src, uint32_t *dst, size_t totalPixels,
-                          const rfbPixelFormat *srcFmt, const rfbPixelFormat *dstFmt) {
-  uint32_t srcRedMax = srcFmt->redMax;
-  uint32_t srcGreenMax = srcFmt->greenMax;
-  uint32_t srcBlueMax = srcFmt->blueMax;
-  uint8_t srcRedShift = srcFmt->redShift;
-  uint8_t srcGreenShift = srcFmt->greenShift;
-  uint8_t srcBlueShift = srcFmt->blueShift;
-  int srcBigEndian = srcFmt->bigEndian;
-
-  uint32_t dstRedMax = dstFmt->redMax;
-  uint32_t dstGreenMax = dstFmt->greenMax;
-  uint32_t dstBlueMax = dstFmt->blueMax;
-  uint8_t dstRedShift = dstFmt->redShift;
-  uint8_t dstGreenShift = dstFmt->greenShift;
-  uint8_t dstBlueShift = dstFmt->blueShift;
-
-  for (size_t i = 0; i < totalPixels; i++) {
-    uint16_t pixel = src[i];
-    if (srcBigEndian) pixel = swap16(pixel);
-
-    uint32_t r = ((pixel >> srcRedShift) & srcRedMax);
-    uint32_t g = ((pixel >> srcGreenShift) & srcGreenMax);
-    uint32_t b = ((pixel >> srcBlueShift) & srcBlueMax);
-
-    if (srcRedMax != dstRedMax) r = r * dstRedMax / srcRedMax;
-    if (srcGreenMax != dstGreenMax) g = g * dstGreenMax / srcGreenMax;
-    if (srcBlueMax != dstBlueMax) b = b * dstBlueMax / srcBlueMax;
-
-    uint32_t outPixel = (r << dstRedShift) | (g << dstGreenShift) | (b << dstBlueShift);
-    if (dstFmt->bigEndian) outPixel = swap32(outPixel);
-
-    dst[i] = outPixel;
-  }
-}
-
-CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width, int height,
-                                       const rfbPixelFormat *serverFormat,
-                                       const rfbPixelFormat *clientFormat) {
-  if (!frameBuffer || width <= 0 || height <= 0 || !serverFormat || !clientFormat)
+CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width, int height, int bitsPerPixel) {
+  if (!frameBuffer || width <= 0 || height <= 0)
     return NULL;
 
-  CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
   CGImageRef image = NULL;
-  size_t totalPixels = (size_t)width * (size_t)height;
-
-  int serverBpp = serverFormat->bitsPerPixel;
-  int clientBpp = clientFormat->bitsPerPixel;
-
-  int formatsMatch = (serverBpp == clientBpp &&
-                      serverFormat->redShift == clientFormat->redShift &&
-                      serverFormat->greenShift == clientFormat->greenShift &&
-                      serverFormat->blueShift == clientFormat->blueShift &&
-                      serverFormat->redMax == clientFormat->redMax &&
-                      serverFormat->greenMax == clientFormat->greenMax &&
-                      serverFormat->blueMax == clientFormat->blueMax &&
-                      serverFormat->bigEndian == clientFormat->bigEndian);
 
   // -------------------------------------------------------------
-  // 1. 32 bpp: 格式匹配时零拷贝直接渲染
+  // 1. 32 bpp: 零拷贝直接渲染 (0ms)
   // -------------------------------------------------------------
-  if (serverBpp == 32 && formatsMatch) {
-    CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, frameBuffer, totalPixels * 4, NULL);
+  if (bitsPerPixel == 32) {
+    CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, frameBuffer, (size_t)width * height * 4, NULL);
     if (provider) {
       image = CGImageCreate(width, height, 8, 32, width * 4, colorSpace,
                             kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst,
@@ -150,7 +61,7 @@ CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width, int he
     return image;
   }
 
-  size_t finalSize = totalPixels * 4;
+  size_t finalSize = (size_t)width * (size_t)height * 4;
   uint32_t *finalBuffer = (uint32_t *)malloc(finalSize);
   if (!finalBuffer) {
     CGColorSpaceRelease(colorSpace);
@@ -158,35 +69,33 @@ CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width, int he
   }
 
   // -------------------------------------------------------------
-  // 2. 32 bpp: 格式不匹配时需要转换
+  // 2. 16 bpp (RGB565): 采用正统准确的 Permute 映射
   // -------------------------------------------------------------
-  if (serverBpp == 32) {
-    convert32to32((const uint32_t *)frameBuffer, finalBuffer, totalPixels, serverFormat, clientFormat);
-  }
-  // -------------------------------------------------------------
-  // 3. 16 bpp: 格式匹配时使用 vImage 快速转换
-  // -------------------------------------------------------------
-  else if (serverBpp == 16 && formatsMatch) {
+  if (bitsPerPixel == 16) {
     vImage_Buffer srcBuf = {(void *)frameBuffer, (vImagePixelCount)height, (vImagePixelCount)width, width * 2};
     vImage_Buffer destBuf = {finalBuffer, (vImagePixelCount)height, (vImagePixelCount)width, width * 4};
+
+    // Step A: Convert RGB565 -> ARGB8888
+    // (输出内存字节顺序为: [A, R, G, B])
     vImageConvert_RGB565toARGB8888(255, &srcBuf, &destBuf, kvImageNoFlags);
+
+    // Step B: 重排为 Little Endian 下正确的 BGRA/BGRX (内存字节: [B, G, R, A])
+    // 映射关系: Dst[0]=Src[3](B), Dst[1]=Src[2](G), Dst[2]=Src[1](R), Dst[3]=Src[0](A)
     const uint8_t permuteMap[4] = {3, 2, 1, 0};
     vImagePermuteChannels_ARGB8888(&destBuf, &destBuf, permuteMap, kvImageNoFlags);
   }
   // -------------------------------------------------------------
-  // 4. 16 bpp: 格式不匹配时通用转换
+  // 3. 8 bpp (RGB332): 修正 NEON 指针索引并并行转换
   // -------------------------------------------------------------
-  else if (serverBpp == 16) {
-    convert16to32((const uint16_t *)frameBuffer, finalBuffer, totalPixels, serverFormat, clientFormat);
-  }
-  // -------------------------------------------------------------
-  // 5. 8 bpp (RGB332): LUT 快速转换
-  // -------------------------------------------------------------
-  else if (serverBpp == 8) {
+  else if (bitsPerPixel == 8) {
     pthread_once(&g_lut_once, init_rgb332_lut);
     const uint8_t *src = (const uint8_t *)frameBuffer;
+    uint32_t *dst = finalBuffer;
+    size_t totalPixels = (size_t)width * (size_t)height;
+
     size_t i = 0;
 #if defined(__ARM_NEON)
+    // 展开 4 像素一组提取，修正指针正确连续取值
     for (; i + 3 < totalPixels; i += 4) {
       uint32x4_t v = {
         g_rgb332_lut[src[i + 0]],
@@ -194,11 +103,12 @@ CGImageRef VNCCreateCGImageFromBuffer(const void *frameBuffer, int width, int he
         g_rgb332_lut[src[i + 2]],
         g_rgb332_lut[src[i + 3]]
       };
-      vst1q_u32(&finalBuffer[i], v);
+      vst1q_u32(&dst[i], v);
     }
 #endif
+    // 剩余像素处理
     for (; i < totalPixels; i++) {
-      finalBuffer[i] = g_rgb332_lut[src[i]];
+      dst[i] = g_rgb332_lut[src[i]];
     }
   } else {
     free(finalBuffer);

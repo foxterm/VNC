@@ -25,15 +25,9 @@ extension VNC {
 
         let width = client.pointee.width.int32
         let height = client.pointee.height.int32
+        let bitsPerPixel = client.pointee.format.bitsPerPixel.int32
 
-        var serverFormat = client.pointee.si.format
-        var clientFormat = client.pointee.format
-
-        let cgImage = withUnsafePointer(to: &serverFormat) { serverFmtPtr in
-            withUnsafePointer(to: &clientFormat) { clientFmtPtr in
-                VNCCreateCGImageFromBuffer(frameBuffer, width, height, serverFmtPtr, clientFmtPtr)
-            }
-        }
+        let cgImage = VNCCreateCGImageFromBuffer(frameBuffer, width, height, bitsPerPixel)
 
         if let cgImage {
             vncDelegate?.buffer(vnc: self, image: cgImage)
