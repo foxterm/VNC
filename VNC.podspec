@@ -19,5 +19,4 @@ Pod::Spec.new do |s|
   s.vendored_frameworks = 'libvncclient.xcframework'
   s.frameworks = 'Security', 'CoreFoundation'
   s.libraries = 'z'
-  s.osx.libraries = 'sasl2'
 end
