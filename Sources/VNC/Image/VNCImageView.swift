@@ -117,6 +117,24 @@ public class VNCEventHandlingView: PlatformView {
         private lazy var lightHaptic = UIImpactFeedbackGenerator(style: .light)
         private lazy var mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
         private lazy var heavyHaptic = UIImpactFeedbackGenerator(style: .heavy)
+
+        private lazy var keyboardDismissBar: UIView = {
+            let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
+            toolbar.autoresizingMask = .flexibleWidth
+            toolbar.isTranslucent = false
+
+            let flex = UIBarButtonItem(systemItem: .flexibleSpace, primaryAction: nil)
+            let hide = UIBarButtonItem(
+                image: UIImage(systemName: "keyboard.chevron.compact.down"),
+                style: .done,
+                target: self,
+                action: #selector(dismissSoftKeyboard)
+            )
+            hide.accessibilityLabel = "Hide Keyboard"
+            hide.tintColor = .label
+            toolbar.items = [flex, hide]
+            return toolbar
+        }()
     #endif
 
     var image: CGImage? {
@@ -222,24 +240,6 @@ public class VNCEventHandlingView: PlatformView {
             get { keyboardDismissBar }
             set { _ = newValue }
         }
-
-        private lazy var keyboardDismissBar: UIView = {
-            let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
-            toolbar.autoresizingMask = .flexibleWidth
-            toolbar.isTranslucent = false
-
-            let flex = UIBarButtonItem(systemItem: .flexibleSpace, primaryAction: nil)
-            let hide = UIBarButtonItem(
-                image: UIImage(systemName: "keyboard.chevron.compact.down"),
-                style: .done,
-                target: self,
-                action: #selector(dismissSoftKeyboard)
-            )
-            hide.accessibilityLabel = "Hide Keyboard"
-            hide.tintColor = .label
-            toolbar.items = [flex, hide]
-            return toolbar
-        }()
 
         @objc private func dismissSoftKeyboard() {
             resignFirstResponder()
