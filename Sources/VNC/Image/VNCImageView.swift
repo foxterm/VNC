@@ -88,9 +88,9 @@ public struct VNCImageView: PlatformViewRepresentable {
                             view.window?.makeFirstResponder(view)
                         }
                     #endif
-                } else if isKeyboardVisible && !view.isFirstResponder {
+                } else if isKeyboardVisible, !view.isFirstResponder {
                     view.becomeFirstResponder()
-                } else if !isKeyboardVisible && view.isFirstResponder {
+                } else if !isKeyboardVisible, view.isFirstResponder {
                     view.resignFirstResponder()
                 }
             } else if !view.isHidden {
@@ -113,7 +113,11 @@ public class VNCEventHandlingView: PlatformView {
     var shouldShowKeyboard: Bool = false
 
     private var currentButtonMask: Int32 = 0
-
+    #if os(macOS)
+        var isFirstResponder: Bool {
+            window?.firstResponder === self
+        }
+    #endif
     #if os(iOS)
         var touchMode: VNCTouchMode {
             get { _touchMode }
@@ -271,7 +275,7 @@ public class VNCEventHandlingView: PlatformView {
             let point = gesture.location(in: self)
             guard bounds.contains(point) else { return }
 
-            if shouldShowKeyboard && !isFirstResponder {
+            if shouldShowKeyboard, !isFirstResponder {
                 becomeFirstResponder()
             }
 
@@ -312,7 +316,7 @@ public class VNCEventHandlingView: PlatformView {
 
             switch gesture.state {
             case .began:
-                if shouldShowKeyboard && !isFirstResponder {
+                if shouldShowKeyboard, !isFirstResponder {
                     becomeFirstResponder()
                 }
                 let (rx, ry) = convertToRemoteCoordinates(point)
@@ -332,7 +336,7 @@ public class VNCEventHandlingView: PlatformView {
 
             switch gesture.state {
             case .began:
-                if shouldShowKeyboard && !isFirstResponder {
+                if shouldShowKeyboard, !isFirstResponder {
                     becomeFirstResponder()
                 }
                 isDragging = true
