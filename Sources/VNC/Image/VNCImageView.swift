@@ -36,6 +36,7 @@ import SwiftUI
 public struct VNCImageView: PlatformViewRepresentable {
     @Environment(\.cgImage) var cgImage
     @Environment(\.isVNCActive) var isActive
+    @Environment(\.isKeyboardVisible) var isKeyboardVisible
     @Environment(\.sendPointerEvent) var sendPointerEvent
     @Environment(\.sendKeyEvent) var sendKeyEvent
 
@@ -66,23 +67,31 @@ public struct VNCImageView: PlatformViewRepresentable {
     private func setupView(_ view: VNCEventHandlingView) {
         view.sendPointerEvent = sendPointerEvent
         view.sendKeyEvent = sendKeyEvent
+        view.shouldShowKeyboard = isKeyboardVisible
     }
 
     private func updateView(_ view: VNCEventHandlingView) {
         autoreleasepool {
             view.sendPointerEvent = sendPointerEvent
             view.sendKeyEvent = sendKeyEvent
+            view.shouldShowKeyboard = isKeyboardVisible
 
             if isActive {
                 view.image = cgImage
                 if view.isHidden {
                     view.isHidden = false
-                    view.becomeFirstResponder()
+                    if isKeyboardVisible {
+                        view.becomeFirstResponder()
+                    }
                     #if os(macOS)
                         DispatchQueue.main.async {
                             view.window?.makeFirstResponder(view)
                         }
                     #endif
+                } else if isKeyboardVisible && !view.isFirstResponder {
+                    view.becomeFirstResponder()
+                } else if !isKeyboardVisible && view.isFirstResponder {
+                    view.resignFirstResponder()
                 }
             } else if !view.isHidden {
                 view.resignFirstResponder()
@@ -101,6 +110,7 @@ public struct VNCImageView: PlatformViewRepresentable {
 public class VNCEventHandlingView: PlatformView {
     var sendPointerEvent: sendVNCPointerEvent?
     var sendKeyEvent: sendVNCKeyEvent?
+    var shouldShowKeyboard: Bool = false
 
     private var currentButtonMask: Int32 = 0
 
@@ -117,24 +127,6 @@ public class VNCEventHandlingView: PlatformView {
         private lazy var lightHaptic = UIImpactFeedbackGenerator(style: .light)
         private lazy var mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
         private lazy var heavyHaptic = UIImpactFeedbackGenerator(style: .heavy)
-
-        private lazy var keyboardDismissBar: UIView = {
-            let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
-            toolbar.autoresizingMask = .flexibleWidth
-            toolbar.isTranslucent = false
-
-            let flex = UIBarButtonItem(systemItem: .flexibleSpace, primaryAction: nil)
-            let hide = UIBarButtonItem(
-                image: UIImage(systemName: "keyboard.chevron.compact.down"),
-                style: .done,
-                target: self,
-                action: #selector(dismissSoftKeyboard)
-            )
-            hide.accessibilityLabel = "Hide Keyboard"
-            hide.tintColor = .label
-            toolbar.items = [flex, hide]
-            return toolbar
-        }()
     #endif
 
     var image: CGImage? {
@@ -236,15 +228,6 @@ public class VNCEventHandlingView: PlatformView {
             true
         }
 
-        override public var inputAccessoryView: UIView? {
-            get { keyboardDismissBar }
-            set { _ = newValue }
-        }
-
-        @objc private func dismissSoftKeyboard() {
-            resignFirstResponder()
-        }
-
         // MARK: - Gesture Setup
 
         func setupGestures() {
@@ -288,7 +271,7 @@ public class VNCEventHandlingView: PlatformView {
             let point = gesture.location(in: self)
             guard bounds.contains(point) else { return }
 
-            if !isFirstResponder {
+            if shouldShowKeyboard && !isFirstResponder {
                 becomeFirstResponder()
             }
 
@@ -329,7 +312,7 @@ public class VNCEventHandlingView: PlatformView {
 
             switch gesture.state {
             case .began:
-                if !isFirstResponder {
+                if shouldShowKeyboard && !isFirstResponder {
                     becomeFirstResponder()
                 }
                 let (rx, ry) = convertToRemoteCoordinates(point)
@@ -349,7 +332,7 @@ public class VNCEventHandlingView: PlatformView {
 
             switch gesture.state {
             case .began:
-                if !isFirstResponder {
+                if shouldShowKeyboard && !isFirstResponder {
                     becomeFirstResponder()
                 }
                 isDragging = true
