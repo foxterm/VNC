@@ -12,6 +12,7 @@ public extension EnvironmentValues {
     @Entry var sendKeyEvent: sendVNCKeyEvent? = nil
 
     @Entry var isVNCActive: Bool = false
+    @Entry var isKeyboardVisible: Bool = false
 }
 
 public extension View {
@@ -21,6 +22,10 @@ public extension View {
 
     func sendKeyEvent(_ action: @escaping sendVNCKeyEvent.Action) -> some View {
         environment(\.sendKeyEvent, sendVNCKeyEvent(action: action))
+    }
+
+    func keyboardVisible(_ visible: Bool) -> some View {
+        environment(\.isKeyboardVisible, visible)
     }
 }
 
