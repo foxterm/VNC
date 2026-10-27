@@ -6,6 +6,10 @@ A dedicated VNC client library for the FoxTerm APP. Built as a Swift wrapper aro
 
 > This library is a dedicated core component for the [FoxTerm](https://foxterm.app/) APP. Download it here: [https://foxterm.app/](https://foxterm.app/)
 
+## Build
+
+The `libvncclient.xcframework` is automatically built by [xcframework_build](https://github.com/foxterm/xcframework_build) CI/CD pipeline and pushed to this repository.
+
 ## Features
 
 - **VNC Protocol** — Full RFB client implementation based on libvncclient
