@@ -79,13 +79,13 @@
 #define LIBVNCSERVER_HAVE_LIBZ  1 
 
 /* Define to 1 if you have the `lzo2' library (-llzo2). */
-/* #undef LIBVNCSERVER_HAVE_LZO */
+#define LIBVNCSERVER_HAVE_LZO  1
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #define LIBVNCSERVER_HAVE_NETINET_IN_H  1 
 
 /* Define to 1 if you have the <sys/endian.h> header file. */
-#define LIBVNCSERVER_HAVE_SYS_ENDIAN_H 1
+/* #undef LIBVNCSERVER_HAVE_SYS_ENDIAN_H */
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #define LIBVNCSERVER_HAVE_SYS_SOCKET_H  1 
